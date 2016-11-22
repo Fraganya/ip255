@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>ip255</title>
+    <!-- Bootstrap Core CSS -->
+    <link href="app/css/bootstrap.min.css" rel="stylesheet">
+    <link href="app/css/animate.css" rel="stylesheet">
+    <link href="app/css/font-awesome.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="app/css/sidebar.css" rel="stylesheet">
+</head>
+<body>
+
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <ul class="sidebar-nav">
+                <li class="sidebar-brand">
+                    <a href="#">
+                       EduSoft ip255
+                    </a>
+                </li>
+                <li><a href="#subnetting" data-toggle="tab">Subnet</a></li>
+                <li><a href="#supernet" data-toggle="tab">Supernet</a></li>
+                <li><a href="#aggregation" data-toggle="tab">Aggregation</a></li>
+                <li><a href="#schema" data-toggle="tab">Schema</a></li>
+                <li><a href="#schema" data-toggle="tab">Misc</a></li>
+            </ul>
+        </div>
+        <!-- /#sidebar-wrapper -->
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <div class="container-fluid">
+              <button class="btn btn-default fa fa-tasks" id="menu-toggle"></button>
+              <div class="row tab-content">
+                 <div class="tab-pane fade in active" id="subnetting"></div>
+                 <div class="tab pane fade" id="supernet"></div>
+                 <div class="tab-pane fade" id="aggregation"></div>
+                 <div class="tab pane fade" id="schema"></div>
+                 <div class="tab pane fade" id="misc"></div>
+              </div>
+            </div>
+        </div>
+        <!-- /#page-content-wrapper -->
+
+    </div>
+    <!-- /#wrapper -->
+    <!-- Jquery resolver -->
+    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
+    <!-- jQuery -->
+    <script src="app/js/jquery-2.1.3.min.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="app/js/bootstrap.min.js"></script>
+
+    <!-- application logic -->
+    <script src="app/js/app-bundle.js"></script>
+    
+    <!-- Menu Toggle Script -->
+    <script>
+    $("#menu-toggle").click(function(e) {
+        e.preventDefault();
+        $("#wrapper").toggleClass("toggled");
+    });
+    </script>
+    <script>if (window.module) module = window.module;</script>
+
+</body>
+
+</html>
