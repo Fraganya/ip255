@@ -3,6 +3,8 @@ import React from "react";
 import {isValidAddress} from "../lib/ip.js";
 import {isValidBits} from "../lib/ip.js";
 import {isValidPrefix} from "../lib/ip.js"
+import {currentNetwork} from '../lib/ip.js';
+import {subnet} from '../lib/ip.js';
 
 var SubnetField=React.createClass({
      handleChange:function(){
@@ -21,12 +23,12 @@ var SubnetField=React.createClass({
  });
  var SubnettedView=React.createClass({
      render:function(){
+         let master=this.props.master;
          return(
                 <div>
-                <p className="well well-sm">Successfully subnetted xxx.xx.xx.xx</p>
-                 <p className="well well-sm col-sm-3">xx Networks<br /> xx Hosts/Subnet</p>
-                 <p className="well well-sm col-sm-4" style={{marginLeft:2+'px'}}>Prefix == /26<br />Subnet ==  255.255.255.0</p>
-                 <p className="well well-sm col-sm-3" style={{marginLeft:2+'px'}}>xx bits borrowed</p>
+                <p className="well well-sm">Successfully subnetted {master.state.curIP} /{master.state.origBits} by lending {master.state.bits} bits</p>
+                 <p className="well well-sm col-sm-3">{master.state.subnetCount} Networks<br /> {master.state.usable} Hosts/Subnet</p>
+                 <p className="well well-sm col-sm-5" style={{marginLeft:2+'px'}}>Prefix == /{master.state.prefix}<br />Subnet ==  {master.state.subMask}</p>
                  {/* summary infor */}
                  <table className="table table-bordered"> 
                     <caption>Network Information</caption> 
@@ -39,28 +41,32 @@ var SubnetField=React.createClass({
                    <tbody>     
                      <tr>          
                          <td>Address</td>  
-                         <td>192.168.10.0</td>               
+                         <td>{master.state.subnets[master.state.curSub].NA}</td>               
                     </tr>  
                     <tr>          
                          <td>Hosts</td>  
-                         <td>14</td>               
+                         <td>{master.state.usable}</td>               
                     </tr> 
                     <tr>          
                          <td>First Address</td>  
-                         <td>192.168.10.1</td>               
+                         <td>{master.state.subnets[master.state.curSub].FA}</td>               
                     </tr>
                     <tr>          
                          <td>Last Address</td>  
-                         <td>192.168.10.14</td>               
+                         <td>{master.state.subnets[master.state.curSub].LA}</td>               
                     </tr>
                     <tr>          
                          <td>Broadcast</td>  
-                         <td>192.168.10.15</td>               
+                         <td>{master.state.subnets[master.state.curSub].BA}</td>               
                     </tr>
+                    {
+                        /* to review if neccessary
+                    
                     <tr>          
                          <td>Range</td>  
                          <td>1-14</td>               
                     </tr>
+                    */}
                     </tbody> 
                 </table>  
              </div>
@@ -86,7 +92,10 @@ var SubnetField=React.createClass({
          if(errors!=0){
              return false;
          }
-         //this.setState({init:false});
+
+         let curIP=currentNetwork(address,subPrefix);
+         let {subnets,subnetCount,usable,newSubMask,newPrefix,origBits}=subnet(address,subPrefix,bitsToLend);
+         this.setState({init:false,subnets,subnetCount,subMask:newSubMask,prefix:newPrefix,usable,curIP,bits:bitsToLend,curSub:0,origBits});
      },
      subnetAdvanced:function(){
         var ipType=this.refs.ipType.value
@@ -121,6 +130,31 @@ var SubnetField=React.createClass({
          else if(mode==="advanced"){
              this.setState({basic:false})
          }
+     },
+     setSub:function()
+     {
+         let subNum=this.refs.subBox.value;
+         if(subNum>this.state.subnetCount || subNum==0 || subNum<0)
+         {
+             alert("Oout of bound ");
+             return;
+         }
+
+         this.setState({curSub:(subNum-1)});
+     },
+     subDown:function()
+     {
+         let curSub=this.state.curSub-1;
+         this.setState({curSub});
+     },
+     subUp:function()
+     {
+         let curSub=this.state.curSub+1;
+         this.setState({curSub});
+     },
+     reset:function()
+     {
+          this.setState({init:true,subnets:[],subnetCount:0,subMask:0,prefix:0,usable:0,curIP:0,bits:0,curSub:0});
      },
      useVLSM:function(){
          if(this.state.useVLSM){
@@ -250,19 +284,22 @@ var SubnetField=React.createClass({
          return(
             <div className="row">
              <div className="col-sm-7">
-             <SubnettedView />
-               <p>Network 2 of 26</p>
+             <SubnettedView master={this}/>
+               <p>Network {this.state.curSub+1} of {this.state.subnetCount}</p>
                     <div className="row">
                      <form className="form-inline col-sm-5">
                         <div className="form-group">
                             <label className="sr-only" htmlFor="subnet number">Go to</label>
-                            <input className="form-control" placeholder="go to subnet"/>
+                            <input className="form-control" ref="subBox" placeholder="go to subnet"/>
                         </div>
-                        <button style={{marginLeft:1+'px'}}className="btn btn-default glyphicon glyphicon-arrow-right"/>
+                        <button style={{marginLeft:1+'px',marginTop:2+'px',borderRadius:0+'px'}} type="button" onClick={this.setSub} className="btn btn-default">Go</button>
+                        <button style={{marginLeft:1+'px',marginTop:2+'px',borderRadius:0+'px'}} type="button" onClick={this.reset} className="btn btn-default">Reset</button>
                     </form>
                     <div className="btn-group col-sm-3">
-                        <button className="btn btn-default glyphicon glyphicon-chevron-left"></button>
-                        <button className="btn btn-default glyphicon glyphicon-chevron-right"></button>
+                        <button className="btn btn-default glyphicon glyphicon-chevron-left" type="button" onClick={this.subDown}
+                        disabled={(this.state.curSub==0) ? true : false}/>
+                        <button className="btn btn-default glyphicon glyphicon-chevron-right" type="button" onClick={this.subUp}
+                        disabled={(this.state.curSub==(this.state.subnetCount-1)) ? true : false} />
                     </div> 
                     </div>
                 </div>{/**end of table view */}

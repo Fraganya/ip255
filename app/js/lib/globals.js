@@ -17,6 +17,18 @@ export const subMasks=[
                 ,'255.255.255.255'
                  ];
 /**
- * Classful network classes
+ * Maximum decimal value for an octet
  */
+export const OCTET_MAX=255;
+
+/**
+ * Maximum number of bits for ipv4 address
+ */
+export const MAX_V4_BITS=32;
+
+/**
+ * Maximum number of bits for an ipv6 address
+ */
+export const MAX_V6_BITS=128;
+
  

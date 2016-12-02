@@ -21511,32 +21511,39 @@
 	    displayName: "SubnettedView",
 
 	    render: function render() {
+	        var master = this.props.master;
 	        return _react2.default.createElement(
 	            "div",
 	            null,
 	            _react2.default.createElement(
 	                "p",
 	                { className: "well well-sm" },
-	                "Successfully subnetted xxx.xx.xx.xx"
+	                "Successfully subnetted ",
+	                master.state.curIP,
+	                " /",
+	                master.state.origBits,
+	                " by lending ",
+	                master.state.bits,
+	                " bits"
 	            ),
 	            _react2.default.createElement(
 	                "p",
 	                { className: "well well-sm col-sm-3" },
-	                "xx Networks",
+	                master.state.subnetCount,
+	                " Networks",
 	                _react2.default.createElement("br", null),
-	                " xx Hosts/Subnet"
+	                " ",
+	                master.state.usable,
+	                " Hosts/Subnet"
 	            ),
 	            _react2.default.createElement(
 	                "p",
-	                { className: "well well-sm col-sm-4", style: { marginLeft: 2 + 'px' } },
-	                "Prefix == /26",
+	                { className: "well well-sm col-sm-5", style: { marginLeft: 2 + 'px' } },
+	                "Prefix == /",
+	                master.state.prefix,
 	                _react2.default.createElement("br", null),
-	                "Subnet ==  255.255.255.0"
-	            ),
-	            _react2.default.createElement(
-	                "p",
-	                { className: "well well-sm col-sm-3", style: { marginLeft: 2 + 'px' } },
-	                "xx bits borrowed"
+	                "Subnet ==  ",
+	                master.state.subMask
 	            ),
 	            _react2.default.createElement(
 	                "table",
@@ -21578,7 +21585,7 @@
 	                        _react2.default.createElement(
 	                            "td",
 	                            null,
-	                            "192.168.10.0"
+	                            master.state.subnets[master.state.curSub].NA
 	                        )
 	                    ),
 	                    _react2.default.createElement(
@@ -21592,7 +21599,7 @@
 	                        _react2.default.createElement(
 	                            "td",
 	                            null,
-	                            "14"
+	                            master.state.usable
 	                        )
 	                    ),
 	                    _react2.default.createElement(
@@ -21606,7 +21613,7 @@
 	                        _react2.default.createElement(
 	                            "td",
 	                            null,
-	                            "192.168.10.1"
+	                            master.state.subnets[master.state.curSub].FA
 	                        )
 	                    ),
 	                    _react2.default.createElement(
@@ -21620,7 +21627,7 @@
 	                        _react2.default.createElement(
 	                            "td",
 	                            null,
-	                            "192.168.10.14"
+	                            master.state.subnets[master.state.curSub].LA
 	                        )
 	                    ),
 	                    _react2.default.createElement(
@@ -21634,21 +21641,7 @@
 	                        _react2.default.createElement(
 	                            "td",
 	                            null,
-	                            "192.168.10.15"
-	                        )
-	                    ),
-	                    _react2.default.createElement(
-	                        "tr",
-	                        null,
-	                        _react2.default.createElement(
-	                            "td",
-	                            null,
-	                            "Range"
-	                        ),
-	                        _react2.default.createElement(
-	                            "td",
-	                            null,
-	                            "1-14"
+	                            master.state.subnets[master.state.curSub].BA
 	                        )
 	                    )
 	                )
@@ -21677,7 +21670,18 @@
 	        if (errors != 0) {
 	            return false;
 	        }
-	        //this.setState({init:false});
+
+	        var curIP = (0, _ip.currentNetwork)(address, subPrefix);
+
+	        var _subnet = (0, _ip.subnet)(address, subPrefix, bitsToLend),
+	            subnets = _subnet.subnets,
+	            subnetCount = _subnet.subnetCount,
+	            usable = _subnet.usable,
+	            newSubMask = _subnet.newSubMask,
+	            newPrefix = _subnet.newPrefix,
+	            origBits = _subnet.origBits;
+
+	        this.setState({ init: false, subnets: subnets, subnetCount: subnetCount, subMask: newSubMask, prefix: newPrefix, usable: usable, curIP: curIP, bits: bitsToLend, curSub: 0, origBits: origBits });
 	    },
 	    subnetAdvanced: function subnetAdvanced() {
 	        var ipType = this.refs.ipType.value;
@@ -21711,6 +21715,26 @@
 	        } else if (mode === "advanced") {
 	            this.setState({ basic: false });
 	        }
+	    },
+	    setSub: function setSub() {
+	        var subNum = this.refs.subBox.value;
+	        if (subNum > this.state.subnetCount || subNum == 0 || subNum < 0) {
+	            alert("Oout of bound ");
+	            return;
+	        }
+
+	        this.setState({ curSub: subNum - 1 });
+	    },
+	    subDown: function subDown() {
+	        var curSub = this.state.curSub - 1;
+	        this.setState({ curSub: curSub });
+	    },
+	    subUp: function subUp() {
+	        var curSub = this.state.curSub + 1;
+	        this.setState({ curSub: curSub });
+	    },
+	    reset: function reset() {
+	        this.setState({ init: true, subnets: [], subnetCount: 0, subMask: 0, prefix: 0, usable: 0, curIP: 0, bits: 0, curSub: 0 });
 	    },
 	    useVLSM: function useVLSM() {
 	        if (this.state.useVLSM) {
@@ -21929,11 +21953,14 @@
 	            _react2.default.createElement(
 	                "div",
 	                { className: "col-sm-7" },
-	                _react2.default.createElement(SubnettedView, null),
+	                _react2.default.createElement(SubnettedView, { master: this }),
 	                _react2.default.createElement(
 	                    "p",
 	                    null,
-	                    "Network 2 of 26"
+	                    "Network ",
+	                    this.state.curSub + 1,
+	                    " of ",
+	                    this.state.subnetCount
 	                ),
 	                _react2.default.createElement(
 	                    "div",
@@ -21949,15 +21976,26 @@
 	                                { className: "sr-only", htmlFor: "subnet number" },
 	                                "Go to"
 	                            ),
-	                            _react2.default.createElement("input", { className: "form-control", placeholder: "go to subnet" })
+	                            _react2.default.createElement("input", { className: "form-control", ref: "subBox", placeholder: "go to subnet" })
 	                        ),
-	                        _react2.default.createElement("button", { style: { marginLeft: 1 + 'px' }, className: "btn btn-default glyphicon glyphicon-arrow-right" })
+	                        _react2.default.createElement(
+	                            "button",
+	                            { style: { marginLeft: 1 + 'px', marginTop: 2 + 'px', borderRadius: 0 + 'px' }, type: "button", onClick: this.setSub, className: "btn btn-default" },
+	                            "Go"
+	                        ),
+	                        _react2.default.createElement(
+	                            "button",
+	                            { style: { marginLeft: 1 + 'px', marginTop: 2 + 'px', borderRadius: 0 + 'px' }, type: "button", onClick: this.reset, className: "btn btn-default" },
+	                            "Reset"
+	                        )
 	                    ),
 	                    _react2.default.createElement(
 	                        "div",
 	                        { className: "btn-group col-sm-3" },
-	                        _react2.default.createElement("button", { className: "btn btn-default glyphicon glyphicon-chevron-left" }),
-	                        _react2.default.createElement("button", { className: "btn btn-default glyphicon glyphicon-chevron-right" })
+	                        _react2.default.createElement("button", { className: "btn btn-default glyphicon glyphicon-chevron-left", type: "button", onClick: this.subDown,
+	                            disabled: this.state.curSub == 0 ? true : false }),
+	                        _react2.default.createElement("button", { className: "btn btn-default glyphicon glyphicon-chevron-right", type: "button", onClick: this.subUp,
+	                            disabled: this.state.curSub == this.state.subnetCount - 1 ? true : false })
 	                    )
 	                )
 	            ),
@@ -22010,8 +22048,14 @@
 	exports.isValidAddress = isValidAddress;
 	exports.isValidBits = isValidBits;
 	exports.isValidPrefix = isValidPrefix;
+	exports.hostCount = hostCount;
+	exports.subnetCount = subnetCount;
+	exports.subnet = subnet;
+	exports.currentNetwork = currentNetwork;
 
-	var _ipv = __webpack_require__(174);
+	var _globals = __webpack_require__(174);
+
+	var _ipv = __webpack_require__(175);
 
 	/**
 	 * Validates IP address
@@ -22052,7 +22096,7 @@
 	    //get available host bits
 	    var availBits = 0;
 	    if (ipType == 4) {
-	        availBits = 32 - (subPrefix.charAt(0) == '/' ? parseInt(subPrefix.substring(1, subPrefix.length)) : (0, _ipv.translateMask)(subPrefix));
+	        availBits = _globals.MAX_V4_BITS - (subPrefix.charAt(0) == '/' ? parseInt(subPrefix.substring(1, subPrefix.length)) : (0, _ipv.translateMask)(subPrefix));
 	    } else if (ipType == 6) {}
 	    if (bits < availBits && bits.length != 0) return true;
 	    logFile ? logFile.push('Invalid Bits to borrow/Insufficient Bits to borrow from.') : console.log('No log  container');
@@ -22076,9 +22120,102 @@
 	    logFile ? logFile.push('Invalid Prefix/Subnet Mask.') : console.log('No log  container');
 	    return status;
 	}
+	/**
+	 * returns num of usable host addresses for a subnet
+	 * @param {int} hostBits - number of off bits (host bits)
+	 * @return {int} - host count;
+	 */
+	function hostCount(hostBits) {
+	    return Math.pow(2, hostBits) - 2;
+	}
+
+	/**
+	 * returns number of subnets
+	 * @param {int} subBits - number of on bits (borrowed bits)
+	 * @return {int} - subneting count (number of subnets);
+	 */
+	function subnetCount(subBits) {
+	    return Math.pow(2, subBits);
+	}
+
+	function subnet(address, subPrefix, toLend) {
+	    subPrefix = subPrefix.charAt(0) == '/' ? subPrefix.substring(1, subPrefix.length) : (0, _ipv.translateMask)(subPrefix);
+
+	    var newPrefix = parseInt(subPrefix) + parseInt(toLend);
+	    var newSubMask = (0, _ipv.translatePrefix)(newPrefix);
+	    var subCount = parseInt(subnetCount(toLend));
+	    var hostSubCount = parseInt(hostCount(_globals.MAX_V4_BITS - newPrefix));
+	    var newIP = (0, _ipv.binInt)(address) & (0, _ipv.binInt)(newSubMask);
+
+	    var sub = { NA: 0, FA: 0, LA: 0, BA: 0 }; //current subnet
+	    var subs = [];
+	    for (var i = 0; i < subCount; i++) {
+	        sub.NA = newIP;
+	        sub.FA = newIP + 1;
+	        sub.LA = sub.NA + hostSubCount;
+	        sub.BA = sub.FA + hostSubCount;
+	        subs.push({ NA: (0, _ipv.binOctet)(sub.NA >>> 0), FA: (0, _ipv.binOctet)(sub.FA >>> 0), LA: (0, _ipv.binOctet)(sub.LA >>> 0), BA: (0, _ipv.binOctet)(sub.BA >>> 0) });
+	        newIP = newIP + (hostSubCount + 2) >>> 0;
+	    }
+
+	    return { subnets: subs, subnetCount: subCount, usable: hostSubCount, newSubMask: newSubMask, newPrefix: newPrefix, origBits: subPrefix };
+	}
+
+	/**
+	 * returns the original network
+	 * @param {string} ip -address 
+	 * @param {string} subPrefix - subnet mask or prefix
+	 * @return {string} - original network
+	 */
+	function currentNetwork(ip, subPrefix) {
+	    //sanitize and get the proper subnet mask - from prefix or subnet mask
+	    var subMask = subPrefix.charAt(0) == '/' ? (0, _ipv.translatePrefix)(subPrefix.substring(1, subPrefix.length)) : subPrefix;
+
+	    return (0, _ipv.binOctet)((0, _ipv.binInt)(subMask) & (0, _ipv.binInt)(ip));
+	}
+
+	function displayOctetal(msg, binInt) {
+	    console.log(msg + [binInt >>> 24, binInt >> 16 & _globals.OCTET_MAX, binInt >> 8 & _globals.OCTET_MAX, binInt & _globals.OCTET_MAX].join('.'));
+	}
 
 /***/ },
 /* 174 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	/*------------------------------------------------------------------------------------------------
+	 | globals.js                                                                                       |
+	 | IP facts                                                       |
+	 | @author : Francis Ganya                                                                       |
+	 | @email  : Ganyaf@gmail.com                                                                    |
+	 -----------------------------------------------------------------------------------------------*/
+
+	/**
+	* Valid ipv4 subnet masks
+	* ref www.freesoft.org/CIE/course/subnet/6.htm
+	*/
+	var subMasks = exports.subMasks = ['0.0.0.0', '128.0.0.0', '192.0.0.0', '224.0.0.0', '240.0.0.0', '248.0.0.0', '252.0.0.0', '254.0.0.0', '255.0.0.0', '255.128.0.0', '255.192.0.0', '255.224.0.0', '255.240.0.0', '255.248.0.0', '255.252.0.0', '255.254.0.0', '255.255.0.0', '255.255.128.0', '255.255.192.0', '255.255.224.0', '255.255.240.0', '255.255.248.0', '255.255.252.0', '255.255.254.0', '255.255.255.0', '255.255.255.128', '255.255.255.192', '255.255.255.224', '255.255.255.240', '255.255.255.248', '255.255.255.252', '255.255.255.254', '255.255.255.255'];
+	/**
+	 * Maximum decimal value for an octet
+	 */
+	var OCTET_MAX = exports.OCTET_MAX = 255;
+
+	/**
+	 * Maximum number of bits for ipv4 address
+	 */
+	var MAX_V4_BITS = exports.MAX_V4_BITS = 32;
+
+	/**
+	 * Maximum number of bits for an ipv6 address
+	 */
+	var MAX_V6_BITS = exports.MAX_V6_BITS = 128;
+
+/***/ },
+/* 175 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -22089,9 +22226,12 @@
 	exports.isIPv4 = isIPv4;
 	exports.translateMask = translateMask;
 	exports.translatePrefix = translatePrefix;
+	exports.binInt = binInt;
+	exports.binOctet = binOctet;
 	exports.getClass = getClass;
+	exports.targetOctet = targetOctet;
 
-	var _globals = __webpack_require__(175);
+	var _globals = __webpack_require__(174);
 
 	/**
 	* Validates ipv4 address 
@@ -22138,6 +22278,30 @@
 	}
 
 	/**
+	 * returns a single interger representaition of an ipv4 address
+	 * @param address - ipv4 address to shift 
+	 * @return ipInt - binary interger representation of the ip address
+	 */
+	function binInt(address) {
+	    var blocks = address.split('.');
+	    var ipInt = 0;
+
+	    for (var i = 0; i < 4; i++) {
+	        ipInt <<= 8;
+	        ipInt += +blocks[i];
+	    }
+	    return ipInt >>> 0;
+	}
+	/**
+	 * returns an octetal represantion of a binary interger
+	 * reverse of binInt(address)
+	 * @param {binary int} binVal - binary represation of an IPv4 address
+	 * @return {string} - 4 decimal array of 
+	 */
+	function binOctet(binVal) {
+	    return [binVal >>> 24, binVal >> 16 & _globals.OCTET_MAX, binVal >> 8 & _globals.OCTET_MAX, binVal & _globals.OCTET_MAX].join('.');
+	}
+	/**
 	 * gets a network class 
 	 * @param {string} address
 	 * @return {char} network class
@@ -22150,30 +22314,76 @@
 	        }
 	}
 
-/***/ },
-/* 175 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	/*------------------------------------------------------------------------------------------------
-	 | globals.js                                                                                       |
-	 | IP facts                                                       |
-	 | @author : Francis Ganya                                                                       |
-	 | @email  : Ganyaf@gmail.com                                                                    |
-	 -----------------------------------------------------------------------------------------------*/
-
 	/**
-	* Valid ipv4 subnet masks
-	* ref www.freesoft.org/CIE/course/subnet/6.htm
-	*/
-	var subMasks = exports.subMasks = ['0.0.0.0', '128.0.0.0', '192.0.0.0', '224.0.0.0', '240.0.0.0', '248.0.0.0', '252.0.0.0', '254.0.0.0', '255.0.0.0', '255.128.0.0', '255.192.0.0', '255.224.0.0', '255.240.0.0', '255.248.0.0', '255.252.0.0', '255.254.0.0', '255.255.0.0', '255.255.128.0', '255.255.192.0', '255.255.224.0', '255.255.240.0', '255.255.248.0', '255.255.252.0', '255.255.254.0', '255.255.255.0', '255.255.255.128', '255.255.255.192', '255.255.255.224', '255.255.255.240', '255.255.255.248', '255.255.255.252', '255.255.255.254', '255.255.255.255'];
-	/**
-	 * Classful network classes
+	 * calculates the target octets to manipulate bits in
+	 * display only for showing working - 
+	 * @param {int} prefix - current prefix length
+	 * @param {string} subMask - current subnet mask
+	 * @param {int} toBorrow - number of bits to turn on (lend)
+	 * @return {object} bitSpan - octets subnetting will take place in and bit dispersal
 	 */
+	function targetOctet(prefix, subMask, toBorrow) {
+	    var octet = undefined,
+	        bitSpan = [];
+	    if (prefix < 30) {
+	        switch (parseInt(prefix)) {
+	            case 8:
+	                octet = 2;break;
+	            case 16:
+	                octet = 3;break;
+	            case 24:
+	                octet = 4;break;
+	            default:
+	                octet = Math.ceil(prefix / 8);
+	        }
+	        var blocks = subMask.split('.');
+	        if (toBorrow > getBits(blocks[octet - 1])) {
+	            bitSpan.push({ num: octet, bits: getBits(blocks[octet - 1]) });
+	            if (toBorrow - getBits(blocks[octet - 1]) > getBits(blocks[octet + 1])) {
+	                bitSpan.push({ num: octect + 1, bits: toBorrow - getBits(blocks[octet + 1]) });
+	                bitSpan.push({ num: octet + 1, bits: toBorrow - getBits(blocks[octet - 1]) - getBits(blocks[octet + 1]) });
+	                // console.log("Not enough bits to borrow in octet",octet+1,",Lending spanning to",octet+2);
+	                //console.log("Using octet [",octet," ,",octet+1,',',octet+2,']');
+	            } else {
+	                bitSpan.push({ num: octet + 1, bits: toBorrow - getBits(blocks[octet - 1]) });
+	                // console.log("Using octet [",octet," ,",octet+1,']');
+	            }
+	        } else {
+	            bitSpan.push({ num: octet, bits: toBorrow });
+	        }
+	        return bitSpan;
+	    }
+	}
+
+	/**
+	 * returns number of host bits available in an octet
+	 * @param {int} octVal - octet Value
+	 * @return {int} - number of host bits available (off bits)
+	 */
+	function getBits(octVal) {
+	    switch (parseInt(octVal)) {
+	        case 255:
+	            return 0;
+	        case 254:
+	            return 1;
+	        case 252:
+	            return 2;
+	        case 248:
+	            return 3;
+	        case 240:
+	            return 4;
+	        case 224:
+	            return 5;
+	        case 192:
+	            return 6;
+	        case 128:
+	            return 7;
+	        case 0:
+	            return 8;
+	        default:
+	            return undefined;
+	    }
+	}
 
 /***/ }
 /******/ ]);
