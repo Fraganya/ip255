@@ -11,11 +11,72 @@ import {isIPv4} from "./ipv4.js";
 import {translateMask} from "./ipv4.js";
 import {translatePrefix} from "./ipv4.js";
 import {getClass} from "./ipv4.js";
+import {getBits} from "./ipv4.js";
 import {binInt} from "./ipv4.js";
 import {binOctet} from "./ipv4.js";
 import {targetOctet} from './ipv4.js';
 
 
+// STAND_ALONE FUNCTIONS
+/**
+ * returns num of usable host addresses for a subnet
+ * @param {int} hostBits - number of off bits (host bits)
+ * @return {int} - host count;
+ */
+function hostCount(hostBits){
+    return (Math.pow(2,hostBits)-2);
+}
+
+/**
+ * returns number of subnets
+ * @param {int} subBits - number of on bits (borrowed bits)
+ * @return {int} - subneting count (number of subnets);
+ */
+function subnetCount(subBits){
+    return Math.pow(2,subBits);
+}
+
+/**
+ * returns number of bits required to create the number of required subnets
+ * @param {int} reqSubs - number of required subnets
+ * @return {int} - number of bits required;
+ */
+function subnetBits(reqSubs){
+    var subBits=Math.log(parseInt(reqSubs))/Math.log(2);
+    subBits=(subBits==parseInt(subBits)) ? subBits : parseInt(subBits)+1;
+    return subBits;
+}
+
+/**
+ * returns number of bits required to have the number of required hosts .subnet
+ * @param {int} reqHosts - number of required hosts/subnet
+ * @return {int} - number of bits required;
+ */
+function hostBits(reqHosts){
+    var hBits=Math.log(parseInt(reqHosts)+2)/Math.log(2);
+    hBits=(hBits==parseInt(hBits)) ? hBits : parseInt(hBits)+1;
+    return hBits;
+}
+
+/**
+ * converts a long integer into a standard 8 bit number 
+ * @param {int} binInt - binary integer to convert
+ * @return {object} binVal - array of binary value 
+ */
+function getBinary(binInt){
+    let binVal=[binInt >>> 24,(binInt >>16) & OCTET_MAX,(binInt >>8) & OCTET_MAX,(binInt & OCTET_MAX)];
+    for(let octet of [0,1,2,3])
+    {
+        binVal[octet]=binVal[octet].toString(2);
+        while(binVal[octet].length<8){ 
+            binVal[octet]='0'+binVal[octet]; //pad with trailing 0's'
+        }
+
+    }
+    return binVal.slice(0);
+}
+
+// EXPORTS
 /**
  * Validates IP address
  * @param {string} address - ip address
@@ -78,23 +139,7 @@ export function isValidPrefix(subPrefix,ipType,logFile){
     (logFile) ? logFile.push('Invalid Prefix/Subnet Mask.'): console.log('No log  container');
     return status;
 }
-/**
- * returns num of usable host addresses for a subnet
- * @param {int} hostBits - number of off bits (host bits)
- * @return {int} - host count;
- */
-export function hostCount(hostBits){
-    return (Math.pow(2,hostBits)-2);
-}
 
-/**
- * returns number of subnets
- * @param {int} subBits - number of on bits (borrowed bits)
- * @return {int} - subneting count (number of subnets);
- */
-export function subnetCount(subBits){
-    return Math.pow(2,subBits);
-}
 
 export function subnet(address,subPrefix,toLend){
     subPrefix=(subPrefix.charAt(0)=='/') ? subPrefix.substring(1,subPrefix.length): translateMask(subPrefix);
@@ -135,6 +180,138 @@ export function currentNetwork(ip,subPrefix)
    
 }
 
+export function getBitsByReqs(subPrefix,reqs,workFile){
+    //get availBits
+      let availBits=0;
+      let subMask=(subPrefix.charAt(0)=='/') ? (translatePrefix(subPrefix.substring(1,subPrefix.length))): subPrefix;
+      subMask.split('.').map((val) =>{
+          availBits+=getBits(val);
+      });
+
+      //compute bits to lend - based on requirenments
+      let bits=0;
+      let subBits=subnetBits(reqs.subReqs);
+      let hBits=hostBits(reqs.hostReqs);
+      
+    
+
+      if((subBits+hBits)<=availBits){
+          workFile.push(...[
+                'Both requirenments can be met.',
+                `${reqs.hostReqs} hosts will neeed ${hBits} bits.`,
+                `${reqs.subReqs} subnets will neeed ${subBits} bits.`,
+                'Subnet requirenments will be priotised since host requirenment will not be affected.',
+                `${reqs.subReqs} subnets will use ${subBits} bits.`,
+                `${availBits-subBits} bit(s) will be used to create subnets of ${hostCount(availBits-subBits)} host(s).`
+                ]);
+           bits=subBits;
+      }
+      else{
+          let subCount=subnetCount(availBits-hBits);
+          workFile.push(...[
+                'Both requirenments can not be met.',
+                `Available bits are ${availBits}`,
+                `${reqs.hostReqs} host(s) require(s) at least ${hBits} bit(s).`,
+                `${reqs.subReqs} subnet(s) require(s) at least ${subBits} bit(s).`,
+                'Host requirenments will be priotised.',
+                `${reqs.subReqs} subnet(s) cannot use ${subBits} bit(s),`,
+                `instead ${availBits-hBits} bit(s) will be used to create ${subCount} subnet(s) with ${hostCount(hBits)} host(s) each.`,
+                `a ${hostCount(hBits)}-hosts subnet can accomodate ${reqs.hostReqs} hosts.`
+                ]);
+            bits=parseInt(availBits)-parseInt(hBits);
+      }
+      return bits;
+}
+
+/**
+ * Checks if a number is a valid host requirenment digit
+ * @param {mixed} num -the number
+ * @param {string} field - field being checked for logging
+ * @param {object} logFile - array to log errors
+ */
+export function isDigit(num,field,logFile){
+    //check if number is valid
+    let status=false;
+    if(parseInt(Number(num))){
+        let sub=parseInt(num);
+        status=(sub==num) ? true : false;
+    }
+    if(status) return true;
+    (logFile) ? logFile.push(`invalid number for ${field}`): console.log('No log  container');
+    return status;
+}
+
+/**
+ * Returns the number of hosts available in the network
+ * @param {string} subPrefix - subnet mask of prefix
+ * @return {int} block size of the network
+ */
+export function max_hosts(subPrefix){
+     let availBits=0;
+     let subMask=(subPrefix.charAt(0)=='/') ? (translatePrefix(subPrefix.substring(1,subPrefix.length))): subPrefix;
+     subMask.split('.').map((val) =>{
+          availBits+=getBits(val);
+      });
+    return hostCount(availBits);
+}
+/**
+ * summarizes a number of routes 
+ * @param {object} subnets - array of subnets to summarize
+ * @return {object} aggregatedNet summarized route info 
+ */
+export function aggregate(subnets,workFile){
+    // arrays to hold subnet ip integer representation and octets bit order
+    let aggregatedNet={};
+    let longInts=[],bitOrder=[];
+    const MAX_SUM_BITS=32;
+    //fill up longInts
+    for(let subnet of subnets){
+        longInts.push(binInt(subnet.address));
+    }
+
+    //generate bit order of subnets
+    workFile.push("Converting networks to binary");
+    let num=0;
+    let bits=0;
+    for(let longInt of longInts){
+        bits=getBinary(longInt);
+        workFile.push(`[${num+1}] ${subnets[num].address} \n-- ${bits.join('.')}`);
+        bitOrder.push(bits.join(''));
+        num++
+    } 
+
+    let prefix=0;
+    let EOM=false; // end of match
+    let bit_; // current bit matching
+
+    for(let bit=0;bit<MAX_SUM_BITS;bit++)
+    {
+        bit_=bitOrder[0][bit]; // get current bit of the first subnet
+        for(let matchIndex=1;matchIndex<subnets.length;matchIndex++)
+        {
+            if(bitOrder[matchIndex][bit]!=bit_) EOM=true;
+        }
+
+        if(EOM) break;
+        prefix++;
+    }
+
+    workFile.push(`The number of matching highest order bits is/are ${prefix}`);
+
+    //get network address
+    let netInt=longInts[0];
+    for(let subNum=1;subNum<subnets.length;subNum++)
+    {
+        netInt&=longInts[subNum];
+    }
+    aggregatedNet={address:binOctet(netInt),prefix,subMask:translatePrefix(prefix)}; 
+    workFile.push(`ANDing bits to find summarized network`);
+    workFile.push(`Summarized network is ${aggregatedNet.address}/${prefix}`);
+    return ({aggregatedNet})
+}
+/**
+ * for debugging 
+ */
 function displayOctetal(msg,binInt)
 {
     console.log(msg+[binInt >>> 24, binInt >> 16 & OCTET_MAX, binInt >> 8 & OCTET_MAX, binInt & OCTET_MAX].join('.'));

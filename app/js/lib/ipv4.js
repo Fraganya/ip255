@@ -137,7 +137,7 @@ export function targetOctet(prefix,subMask,toBorrow){
  * @param {int} octVal - octet Value
  * @return {int} - number of host bits available (off bits)
  */
-function getBits(octVal){
+export function getBits(octVal){
     switch(parseInt(octVal))
     {
         case 255: return 0;

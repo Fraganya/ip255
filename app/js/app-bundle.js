@@ -58,12 +58,34 @@
 
 	var _subnetting2 = _interopRequireDefault(_subnetting);
 
+	var _supernet = __webpack_require__(176);
+
+	var _supernet2 = _interopRequireDefault(_supernet);
+
+	var _aggregation = __webpack_require__(177);
+
+	var _aggregation2 = _interopRequireDefault(_aggregation);
+
+	var _schema = __webpack_require__(178);
+
+	var _schema2 = _interopRequireDefault(_schema);
+
+	var _misc = __webpack_require__(179);
+
+	var _misc2 = _interopRequireDefault(_misc);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+	/** Render components int target tabs */
 	_reactDom2.default.render(_react2.default.createElement(_subnetting2.default, null), document.getElementById("subnetting"));
 
 	/** Components */
 	/** Libraries */
+
+	_reactDom2.default.render(_react2.default.createElement(_supernet2.default, null), document.getElementById("supernet"));
+	_reactDom2.default.render(_react2.default.createElement(_aggregation2.default, null), document.getElementById("aggregation"));
+	_reactDom2.default.render(_react2.default.createElement(_schema2.default, null), document.getElementById("schema"));
+	_reactDom2.default.render(_react2.default.createElement(_misc2.default, null), document.getElementById("misc"));
 
 /***/ },
 /* 1 */
@@ -21492,6 +21514,9 @@
 	        var hosts = this.refs.hostCount.value;
 	        this.props.updater(hosts, this.props.num - 1);
 	    },
+	    remove: function remove() {
+	        this.props.remove(this.props.num - 1);
+	    },
 	    render: function render() {
 	        return _react2.default.createElement(
 	            "div",
@@ -21503,7 +21528,20 @@
 	                this.props.num,
 	                " required hosts"
 	            ),
-	            _react2.default.createElement("input", { className: "form-control", ref: "hostCount", onChange: this.handleChange, value: this.props.hosts })
+	            _react2.default.createElement(
+	                "div",
+	                { className: "input-group input-group-sm" },
+	                _react2.default.createElement("input", { className: "form-control", ref: "hostCount", onChange: this.handleChange, value: this.props.hosts }),
+	                _react2.default.createElement(
+	                    "span",
+	                    { className: "input-group-btn" },
+	                    _react2.default.createElement(
+	                        "button",
+	                        { className: "btn btn-default", type: "button", onClick: this.remove },
+	                        _react2.default.createElement("span", { className: "fa fa-close" })
+	                    )
+	                )
+	            )
 	        );
 	    }
 	});
@@ -21660,14 +21698,15 @@
 	        var address = this.refs.address.value;
 	        var subPrefix = this.refs.subPrefix.value;
 	        var bitsToLend = this.refs.bitsToLend.value;
-	        var errors = 0;
+
 	        var errorLog = [];
-	        (0, _ip.isValidAddress)(address, ipType, errorLog) ? '' : errors++;
-	        (0, _ip.isValidPrefix)(subPrefix, ipType, errorLog) ? '' : errors++;
-	        (0, _ip.isValidBits)(bitsToLend, subPrefix, ipType, errorLog) ? '' : errors++;
+
+	        (0, _ip.isValidAddress)(address, ipType, errorLog);
+	        (0, _ip.isValidPrefix)(subPrefix, ipType, errorLog);
+	        (0, _ip.isValidBits)(bitsToLend, subPrefix, ipType, errorLog);
 	        console.log(errorLog);
 	        this.setState({ errors: errorLog });
-	        if (errors != 0) {
+	        if (errorLog.length != 0) {
 	            return false;
 	        }
 
@@ -21681,7 +21720,7 @@
 	            newPrefix = _subnet.newPrefix,
 	            origBits = _subnet.origBits;
 
-	        this.setState({ init: false, subnets: subnets, subnetCount: subnetCount, subMask: newSubMask, prefix: newPrefix, usable: usable, curIP: curIP, bits: bitsToLend, curSub: 0, origBits: origBits });
+	        this.setState({ init: false, subnets: subnets, subnetCount: subnetCount, subMask: newSubMask, prefix: newPrefix, usable: usable, curIP: curIP, bits: bitsToLend, curSub: 0, origBits: origBits, workFile: [] });
 	    },
 	    subnetAdvanced: function subnetAdvanced() {
 	        var ipType = this.refs.ipType.value;
@@ -21689,10 +21728,37 @@
 	        var subPrefix = this.refs.subPrefix.value;
 	        var hostReqs = this.refs.hostReqs.value;
 	        var subReqs = this.refs.subReqs.value;
-	        validate_address(address, errorLog) ? errors++ : '';
-	        validate_prefix(subPrefix, errorLog, ipType) ? erros++ : '';
-	        validate_subReq(hostReqs, 'Invalid Host requirenments', errorLog) ? erros++ : '';
-	        validate_subReq(subReqs, 'Invalid Host Requirenments', errorLog) ? erros++ : '';
+
+	        var errorLog = [];
+
+	        (0, _ip.isValidAddress)(address, ipType, errorLog);
+	        (0, _ip.isValidPrefix)(subPrefix, ipType, errorLog);
+	        (0, _ip.isDigit)(hostReqs, 'host requirenment', errorLog);
+	        (0, _ip.isDigit)(subReqs, 'subnet requirenment', errorLog);
+
+	        //check if the host requirenments are not exceeding the max size of the block
+	        if ((0, _ip.max_hosts)(subPrefix) < hostReqs) {
+	            errorLog.push("The host requirenments exceed the maximum size of the network " + (0, _ip.max_hosts)(subPrefix) + ",Use another address block!");
+	        }
+	        console.log(errorLog);
+	        this.setState({ errors: errorLog });
+	        if (errorLog.length != 0) {
+	            return false;
+	        }
+
+	        var curIP = (0, _ip.currentNetwork)(address, subPrefix);
+	        var workFile = [];
+	        var bitsToLend = (0, _ip.getBitsByReqs)(subPrefix, { hostReqs: hostReqs, subReqs: subReqs }, workFile);
+
+	        var _subnet2 = (0, _ip.subnet)(address, subPrefix, bitsToLend),
+	            subnets = _subnet2.subnets,
+	            subnetCount = _subnet2.subnetCount,
+	            usable = _subnet2.usable,
+	            newSubMask = _subnet2.newSubMask,
+	            newPrefix = _subnet2.newPrefix,
+	            origBits = _subnet2.origBits;
+
+	        this.setState({ init: false, subnets: subnets, subnetCount: subnetCount, subMask: newSubMask, prefix: newPrefix, usable: usable, curIP: curIP, bits: bitsToLend, curSub: 0, origBits: origBits, workFile: workFile });
 	    },
 	    subnetWithVLSM: function subnetWithVLSM() {
 	        var ipType = this.refs.ipType.value;
@@ -21734,7 +21800,7 @@
 	        this.setState({ curSub: curSub });
 	    },
 	    reset: function reset() {
-	        this.setState({ init: true, subnets: [], subnetCount: 0, subMask: 0, prefix: 0, usable: 0, curIP: 0, bits: 0, curSub: 0 });
+	        this.setState({ init: true, subnets: [], subnetCount: 0, subMask: 0, prefix: 0, usable: 0, curIP: 0, bits: 0, curSub: 0, workFile: [] });
 	    },
 	    useVLSM: function useVLSM() {
 	        if (this.state.useVLSM) {
@@ -21745,17 +21811,33 @@
 	        }
 	    },
 	    addSubnet: function addSubnet() {
-	        var subCount = this.state.subnetCount;
 	        var reqSubnets = this.state.reqSubnets;
-	        reqSubnets.push({ hosts: 0, num: subCount + 1 });
-	        this.setState({ reqSubnets: reqSubnets, subnetCount: subCount + 1 });
+	        reqSubnets.push({ hosts: 0, num: reqSubnets.length + 1 });
+	        this.setState({ reqSubnets: reqSubnets, subnetCount: reqSubnets.length + 1, errors: [] });
 	    },
 	    updateSubnet: function updateSubnet(val, key) {
 	        var reqSubnets = this.state.reqSubnets;
 	        reqSubnets[key].hosts = val;
 	        this.setState({ reqSubnets: reqSubnets });
 	    },
+	    remove: function remove(key) {
+	        var reqSubnets = this.state.reqSubnets;
+	        var errorLog = [];
+	        if (reqSubnets.length == 1) {
+	            errorLog.push("There must be at least 1 subnet");
+	            this.setState({ errors: errorLog });
+	            return;
+	        } else if (key != reqSubnets.length - 1) {
+	            errorLog.push("You cannot remove subnet " + (key + 1) + " whilst subnet " + reqSubnets.length + " is in existence.Remove higher subnets first!");
+	            this.setState({ errors: errorLog });
+	            return;
+	        }
+	        reqSubnets.splice(key, 1);
+	        this.setState({ reqSubnets: reqSubnets, errors: [] });
+	    },
 	    normalRender: function normalRender() {
+	        var _this = this;
+
 	        var aproParams = undefined;
 	        var aproFeedback = function aproFeedback() {};
 	        var aproSubnet = undefined;
@@ -21774,7 +21856,7 @@
 	            };
 	            aproSubnet = this.subnetBasic;
 	        } else if (!this.state.basic && !this.state.useVLSM) {
-	            aproParams = function () {
+	            aproParams = function aproParams() {
 	                return _react2.default.createElement(
 	                    "div",
 	                    null,
@@ -21797,21 +21879,21 @@
 	                        _react2.default.createElement(
 	                            "label",
 	                            null,
-	                            _react2.default.createElement("input", { type: "checkbox", onChange: this.useVLSM, checked: this.state.useVLSM }),
+	                            _react2.default.createElement("input", { type: "checkbox", onChange: _this.useVLSM, checked: _this.state.useVLSM }),
 	                            "use VLSM"
 	                        )
 	                    )
 	                );
-	            }.bind(this);
+	            };
 	            aproSubnet = this.subnetAdvanced;
 	        } else {
-	            aproParams = function () {
+	            aproParams = function aproParams() {
 	                return _react2.default.createElement(
 	                    "div",
 	                    null,
-	                    this.state.reqSubnets.map(function (subnet, index) {
-	                        return _react2.default.createElement(SubnetField, { ref: 'vlsmSub_' + subnet.num, key: index, updater: this.updateSubnet, num: subnet.num, hosts: subnet.hosts });
-	                    }.bind(this)),
+	                    _this.state.reqSubnets.map(function (subnet, index) {
+	                        return _react2.default.createElement(SubnetField, { ref: 'vlsmSub_' + subnet.num, remove: this.remove, key: index, updater: this.updateSubnet, num: subnet.num, hosts: subnet.hosts });
+	                    }.bind(_this)),
 	                    _react2.default.createElement(
 	                        "div",
 	                        { className: "row" },
@@ -21822,7 +21904,7 @@
 	                            _react2.default.createElement(
 	                                "label",
 	                                null,
-	                                _react2.default.createElement("input", { type: "checkbox", onChange: this.useVLSM, checked: this.state.useVLSM }),
+	                                _react2.default.createElement("input", { type: "checkbox", onChange: _this.useVLSM, checked: _this.state.useVLSM }),
 	                                "use VLSM"
 	                            )
 	                        ),
@@ -21831,20 +21913,20 @@
 	                            { style: { marginTop: 4 + 'px' }, className: "col-sm-6" },
 	                            _react2.default.createElement(
 	                                "button",
-	                                { className: "btn btn-default pull-right", type: "button", onClick: this.addSubnet },
+	                                { className: "btn btn-default pull-right", type: "button", onClick: _this.addSubnet },
 	                                _react2.default.createElement("span", { className: "glyphicon glyphicon-plus-sign" }),
 	                                " Subnet"
 	                            )
 	                        )
 	                    )
 	                );
-	            }.bind(this);
+	            };
 	            aproSubnet = this.subnetWithVLSM;
 	        }
 
 	        //prep error log
 	        if (this.state.errors.length != 0) {
-	            aproFeedback = function () {
+	            aproFeedback = function aproFeedback() {
 	                return _react2.default.createElement(
 	                    "div",
 	                    null,
@@ -21853,7 +21935,7 @@
 	                        null,
 	                        "Please Resolve the following issues"
 	                    ),
-	                    this.state.errors.map(function (error, index) {
+	                    _this.state.errors.map(function (error, index) {
 	                        return _react2.default.createElement(
 	                            "div",
 	                            { className: "alert alert-danger", key: index },
@@ -21861,7 +21943,7 @@
 	                        );
 	                    })
 	                );
-	            }.bind(this);
+	            };
 	        }
 	        return _react2.default.createElement(
 	            "div",
@@ -22010,7 +22092,14 @@
 	                        null,
 	                        "Working console"
 	                    ),
-	                    _react2.default.createElement("hr", null)
+	                    _react2.default.createElement("hr", null),
+	                    this.state.workFile.map(function (val, index) {
+	                        return _react2.default.createElement(
+	                            "p",
+	                            { key: index },
+	                            val
+	                        );
+	                    })
 	                )
 	            )
 	        );
@@ -22048,21 +22137,31 @@
 	exports.isValidAddress = isValidAddress;
 	exports.isValidBits = isValidBits;
 	exports.isValidPrefix = isValidPrefix;
-	exports.hostCount = hostCount;
-	exports.subnetCount = subnetCount;
 	exports.subnet = subnet;
 	exports.currentNetwork = currentNetwork;
+	exports.getBitsByReqs = getBitsByReqs;
+	exports.isDigit = isDigit;
+	exports.max_hosts = max_hosts;
+	exports.aggregate = aggregate;
 
 	var _globals = __webpack_require__(174);
 
 	var _ipv = __webpack_require__(175);
 
+	// STAND_ALONE FUNCTIONS
 	/**
-	 * Validates IP address
-	 * @param {string} address - ip address
-	 * @param {string} ipType  - type of ip address (4 or 6)
-	 * @param {object} logFile - container for logging errors
-	 * @return bool status -true if valid ,false otherwise
+	 * returns num of usable host addresses for a subnet
+	 * @param {int} hostBits - number of off bits (host bits)
+	 * @return {int} - host count;
+	 */
+	function hostCount(hostBits) {
+	    return Math.pow(2, hostBits) - 2;
+	}
+
+	/**
+	 * returns number of subnets
+	 * @param {int} subBits - number of on bits (borrowed bits)
+	 * @return {int} - subneting count (number of subnets);
 	 */
 	/*----------------------------------------------------------------------------------------------
 	| ip.js                                                                                         |
@@ -22072,6 +22171,58 @@
 	-----------------------------------------------------------------------------------------------*/
 
 	/* import dependecies */
+	function subnetCount(subBits) {
+	    return Math.pow(2, subBits);
+	}
+
+	/**
+	 * returns number of bits required to create the number of required subnets
+	 * @param {int} reqSubs - number of required subnets
+	 * @return {int} - number of bits required;
+	 */
+	function subnetBits(reqSubs) {
+	    var subBits = Math.log(parseInt(reqSubs)) / Math.log(2);
+	    subBits = subBits == parseInt(subBits) ? subBits : parseInt(subBits) + 1;
+	    return subBits;
+	}
+
+	/**
+	 * returns number of bits required to have the number of required hosts .subnet
+	 * @param {int} reqHosts - number of required hosts/subnet
+	 * @return {int} - number of bits required;
+	 */
+	function hostBits(reqHosts) {
+	    var hBits = Math.log(parseInt(reqHosts) + 2) / Math.log(2);
+	    hBits = hBits == parseInt(hBits) ? hBits : parseInt(hBits) + 1;
+	    return hBits;
+	}
+
+	/**
+	 * converts a long integer into a standard 8 bit number 
+	 * @param {int} binInt - binary integer to convert
+	 * @return {object} binVal - array of binary value 
+	 */
+	function getBinary(binInt) {
+	    var binVal = [binInt >>> 24, binInt >> 16 & _globals.OCTET_MAX, binInt >> 8 & _globals.OCTET_MAX, binInt & _globals.OCTET_MAX];
+	    var _arr = [0, 1, 2, 3];
+	    for (var _i = 0; _i < _arr.length; _i++) {
+	        var octet = _arr[_i];
+	        binVal[octet] = binVal[octet].toString(2);
+	        while (binVal[octet].length < 8) {
+	            binVal[octet] = '0' + binVal[octet]; //pad with trailing 0's'
+	        }
+	    }
+	    return binVal.slice(0);
+	}
+
+	// EXPORTS
+	/**
+	 * Validates IP address
+	 * @param {string} address - ip address
+	 * @param {string} ipType  - type of ip address (4 or 6)
+	 * @param {object} logFile - container for logging errors
+	 * @return bool status -true if valid ,false otherwise
+	 */
 	function isValidAddress(value, ipType, logFile) {
 	    var status = false;
 	    if (ipType == 4) {
@@ -22120,23 +22271,6 @@
 	    logFile ? logFile.push('Invalid Prefix/Subnet Mask.') : console.log('No log  container');
 	    return status;
 	}
-	/**
-	 * returns num of usable host addresses for a subnet
-	 * @param {int} hostBits - number of off bits (host bits)
-	 * @return {int} - host count;
-	 */
-	function hostCount(hostBits) {
-	    return Math.pow(2, hostBits) - 2;
-	}
-
-	/**
-	 * returns number of subnets
-	 * @param {int} subBits - number of on bits (borrowed bits)
-	 * @return {int} - subneting count (number of subnets);
-	 */
-	function subnetCount(subBits) {
-	    return Math.pow(2, subBits);
-	}
 
 	function subnet(address, subPrefix, toLend) {
 	    subPrefix = subPrefix.charAt(0) == '/' ? subPrefix.substring(1, subPrefix.length) : (0, _ipv.translateMask)(subPrefix);
@@ -22174,6 +22308,160 @@
 	    return (0, _ipv.binOctet)((0, _ipv.binInt)(subMask) & (0, _ipv.binInt)(ip));
 	}
 
+	function getBitsByReqs(subPrefix, reqs, workFile) {
+	    //get availBits
+	    var availBits = 0;
+	    var subMask = subPrefix.charAt(0) == '/' ? (0, _ipv.translatePrefix)(subPrefix.substring(1, subPrefix.length)) : subPrefix;
+	    subMask.split('.').map(function (val) {
+	        availBits += (0, _ipv.getBits)(val);
+	    });
+
+	    //compute bits to lend - based on requirenments
+	    var bits = 0;
+	    var subBits = subnetBits(reqs.subReqs);
+	    var hBits = hostBits(reqs.hostReqs);
+
+	    if (subBits + hBits <= availBits) {
+	        workFile.push.apply(workFile, ['Both requirenments can be met.', reqs.hostReqs + " hosts will neeed " + hBits + " bits.", reqs.subReqs + " subnets will neeed " + subBits + " bits.", 'Subnet requirenments will be priotised since host requirenment will not be affected.', reqs.subReqs + " subnets will use " + subBits + " bits.", availBits - subBits + " bit(s) will be used to create subnets of " + hostCount(availBits - subBits) + " host(s)."]);
+	        bits = subBits;
+	    } else {
+	        var subCount = subnetCount(availBits - hBits);
+	        workFile.push.apply(workFile, ['Both requirenments can not be met.', "Available bits are " + availBits, reqs.hostReqs + " host(s) require(s) at least " + hBits + " bit(s).", reqs.subReqs + " subnet(s) require(s) at least " + subBits + " bit(s).", 'Host requirenments will be priotised.', reqs.subReqs + " subnet(s) cannot use " + subBits + " bit(s),", "instead " + (availBits - hBits) + " bit(s) will be used to create " + subCount + " subnet(s) with " + hostCount(hBits) + " host(s) each.", "a " + hostCount(hBits) + "-hosts subnet can accomodate " + reqs.hostReqs + " hosts."]);
+	        bits = parseInt(availBits) - parseInt(hBits);
+	    }
+	    return bits;
+	}
+
+	/**
+	 * Checks if a number is a valid host requirenment digit
+	 * @param {mixed} num -the number
+	 * @param {string} field - field being checked for logging
+	 * @param {object} logFile - array to log errors
+	 */
+	function isDigit(num, field, logFile) {
+	    //check if number is valid
+	    var status = false;
+	    if (parseInt(Number(num))) {
+	        var sub = parseInt(num);
+	        status = sub == num ? true : false;
+	    }
+	    if (status) return true;
+	    logFile ? logFile.push("invalid number for " + field) : console.log('No log  container');
+	    return status;
+	}
+
+	/**
+	 * Returns the number of hosts available in the network
+	 * @param {string} subPrefix - subnet mask of prefix
+	 * @return {int} block size of the network
+	 */
+	function max_hosts(subPrefix) {
+	    var availBits = 0;
+	    var subMask = subPrefix.charAt(0) == '/' ? (0, _ipv.translatePrefix)(subPrefix.substring(1, subPrefix.length)) : subPrefix;
+	    subMask.split('.').map(function (val) {
+	        availBits += (0, _ipv.getBits)(val);
+	    });
+	    return hostCount(availBits);
+	}
+	/**
+	 * summarizes a number of routes 
+	 * @param {object} subnets - array of subnets to summarize
+	 * @return {object} aggregatedNet summarized route info 
+	 */
+	function aggregate(subnets, workFile) {
+	    // arrays to hold subnet ip integer representation and octets bit order
+	    var aggregatedNet = {};
+	    var longInts = [],
+	        bitOrder = [];
+	    var MAX_SUM_BITS = 32;
+	    //fill up longInts
+	    var _iteratorNormalCompletion = true;
+	    var _didIteratorError = false;
+	    var _iteratorError = undefined;
+
+	    try {
+	        for (var _iterator = subnets[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	            var _subnet = _step.value;
+
+	            longInts.push((0, _ipv.binInt)(_subnet.address));
+	        }
+
+	        //generate bit order of subnets
+	    } catch (err) {
+	        _didIteratorError = true;
+	        _iteratorError = err;
+	    } finally {
+	        try {
+	            if (!_iteratorNormalCompletion && _iterator.return) {
+	                _iterator.return();
+	            }
+	        } finally {
+	            if (_didIteratorError) {
+	                throw _iteratorError;
+	            }
+	        }
+	    }
+
+	    workFile.push("Converting networks to binary");
+	    var num = 0;
+	    var bits = 0;
+	    var _iteratorNormalCompletion2 = true;
+	    var _didIteratorError2 = false;
+	    var _iteratorError2 = undefined;
+
+	    try {
+	        for (var _iterator2 = longInts[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	            var longInt = _step2.value;
+
+	            bits = getBinary(longInt);
+	            workFile.push("[" + (num + 1) + "] " + subnets[num].address + " \n-- " + bits.join('.'));
+	            bitOrder.push(bits.join(''));
+	            num++;
+	        }
+	    } catch (err) {
+	        _didIteratorError2 = true;
+	        _iteratorError2 = err;
+	    } finally {
+	        try {
+	            if (!_iteratorNormalCompletion2 && _iterator2.return) {
+	                _iterator2.return();
+	            }
+	        } finally {
+	            if (_didIteratorError2) {
+	                throw _iteratorError2;
+	            }
+	        }
+	    }
+
+	    var prefix = 0;
+	    var EOM = false; // end of match
+	    var bit_ = void 0; // current bit matching
+
+	    for (var bit = 0; bit < MAX_SUM_BITS; bit++) {
+	        bit_ = bitOrder[0][bit]; // get current bit of the first subnet
+	        for (var matchIndex = 1; matchIndex < subnets.length; matchIndex++) {
+	            if (bitOrder[matchIndex][bit] != bit_) EOM = true;
+	        }
+
+	        if (EOM) break;
+	        prefix++;
+	    }
+
+	    workFile.push("The number of matching highest order bits is/are " + prefix);
+
+	    //get network address
+	    var netInt = longInts[0];
+	    for (var subNum = 1; subNum < subnets.length; subNum++) {
+	        netInt &= longInts[subNum];
+	    }
+	    aggregatedNet = { address: (0, _ipv.binOctet)(netInt), prefix: prefix, subMask: (0, _ipv.translatePrefix)(prefix) };
+	    workFile.push("ANDing bits to find summarized network");
+	    workFile.push("Summarized network is " + aggregatedNet.address + "/" + prefix);
+	    return { aggregatedNet: aggregatedNet };
+	}
+	/**
+	 * for debugging 
+	 */
 	function displayOctetal(msg, binInt) {
 	    console.log(msg + [binInt >>> 24, binInt >> 16 & _globals.OCTET_MAX, binInt >> 8 & _globals.OCTET_MAX, binInt & _globals.OCTET_MAX].join('.'));
 	}
@@ -22230,6 +22518,7 @@
 	exports.binOctet = binOctet;
 	exports.getClass = getClass;
 	exports.targetOctet = targetOctet;
+	exports.getBits = getBits;
 
 	var _globals = __webpack_require__(174);
 
@@ -22384,6 +22673,1238 @@
 	            return undefined;
 	    }
 	}
+
+/***/ },
+/* 176 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var SupernetTab = _react2.default.createClass({
+	    displayName: "SupernetTab",
+
+	    getInitialState: function getInitialState() {
+	        return { init: true, errors: [] };
+	    },
+	    supernet: function supernet() {
+	        this.setState({ init: false });
+	    },
+	    reset: function reset() {
+	        this.setState({ init: true });
+	    },
+	    normalRender: function normalRender() {
+	        var _this = this;
+
+	        //prep error log
+	        var aproFeedback = function aproFeedback() {};
+	        if (this.state.errors.length != 0) {
+	            aproFeedback = function aproFeedback() {
+	                return _react2.default.createElement(
+	                    "div",
+	                    null,
+	                    _react2.default.createElement(
+	                        "p",
+	                        null,
+	                        "Please Resolve the following issues"
+	                    ),
+	                    _this.state.errors.map(function (error, index) {
+	                        return _react2.default.createElement(
+	                            "div",
+	                            { className: "alert alert-danger", key: index },
+	                            error
+	                        );
+	                    })
+	                );
+	            };
+	        }
+
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "row" },
+	            _react2.default.createElement(
+	                "form",
+	                { className: "form col-sm-4" },
+	                _react2.default.createElement(
+	                    "label",
+	                    { className: "" },
+	                    "Type"
+	                ),
+	                _react2.default.createElement(
+	                    "select",
+	                    { className: "form-control", ref: "ipType" },
+	                    _react2.default.createElement(
+	                        "option",
+	                        { value: "4" },
+	                        "IPv4"
+	                    ),
+	                    _react2.default.createElement(
+	                        "option",
+	                        { value: "6" },
+	                        "IPv6"
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    "label",
+	                    { htmlFor: "address" },
+	                    "Address"
+	                ),
+	                _react2.default.createElement("input", { className: "form-control", ref: "address" }),
+	                _react2.default.createElement(
+	                    "label",
+	                    { htmlFor: "subnet" },
+	                    "Subnet/Prefix"
+	                ),
+	                _react2.default.createElement("input", { className: "form-control", ref: "subPrefix" }),
+	                _react2.default.createElement(
+	                    "label",
+	                    { htmlFor: "subnet" },
+	                    "Hosts required"
+	                ),
+	                _react2.default.createElement("input", { className: "form-control", ref: "hostReq" }),
+	                _react2.default.createElement("hr", null),
+	                _react2.default.createElement(
+	                    "div",
+	                    { style: { marginTop: 4 + 'px' } },
+	                    _react2.default.createElement(
+	                        "button",
+	                        { className: "btn btn-default pull-right", type: "button", onClick: this.supernet },
+	                        "Supernet"
+	                    )
+	                )
+	            ),
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-4" },
+	                aproFeedback()
+	            )
+	        );
+	    },
+	    finalRender: function finalRender() {
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "row" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-7" },
+	                _react2.default.createElement(
+	                    "p",
+	                    { className: "well well-sm col-sm-12" },
+	                    "Successfully supernetted the xx.xx.xx.xx network by turning off xx network bits"
+	                ),
+	                _react2.default.createElement(
+	                    "table",
+	                    { className: "table table-bordered col-sm-6" },
+	                    _react2.default.createElement(
+	                        "caption",
+	                        null,
+	                        "New  Network Info"
+	                    ),
+	                    _react2.default.createElement(
+	                        "thead",
+	                        null,
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Param"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Value"
+	                            )
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        "tbody",
+	                        null,
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "Network"
+	                            ),
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "xx.xx.xx.xx:"
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "Prefix"
+	                            ),
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "xx:"
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "Mask"
+	                            ),
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "xx.xx.xx.xx:"
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "Hosts"
+	                            ),
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "xx.xx.xx.xx:"
+	                            )
+	                        )
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    "table",
+	                    { className: "table table-bordered col-sm-6" },
+	                    _react2.default.createElement(
+	                        "caption",
+	                        null,
+	                        "Old  Network Info"
+	                    ),
+	                    _react2.default.createElement(
+	                        "thead",
+	                        null,
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Param"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Value"
+	                            )
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        "tbody",
+	                        null,
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "Network"
+	                            ),
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "xx.xx.xx.xx:"
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "Prefix"
+	                            ),
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "xx:"
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "Mask"
+	                            ),
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "xx.xx.xx.xx:"
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "Hosts"
+	                            ),
+	                            _react2.default.createElement(
+	                                "td",
+	                                null,
+	                                "xx.xx.xx.xx:"
+	                            )
+	                        )
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { style: { marginLeft: 1 + 'px', marginTop: 2 + 'px', borderRadius: 0 + 'px' }, type: "button", onClick: this.reset, className: "btn btn-default" },
+	                    "Reset"
+	                )
+	            )
+	        );
+	    },
+	    render: function render() {
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "col-lg-12" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "Header" },
+	                _react2.default.createElement(
+	                    "h3",
+	                    { className: "head" },
+	                    "Supernet"
+	                )
+	            ),
+	            _react2.default.createElement("hr", null),
+	            this.state.init ? this.normalRender() : this.finalRender()
+	        );
+	    }
+	});
+
+	exports.default = SupernetTab;
+
+/***/ },
+/* 177 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _ip = __webpack_require__(173);
+
+	var _ipv = __webpack_require__(175);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var NetworkField = _react2.default.createClass({
+	    displayName: 'NetworkField',
+
+	    handleChange: function handleChange() {
+	        var address = this.refs.address.value;
+	        this.props.updater(address, this.props.num - 1);
+	    },
+	    remove: function remove() {
+	        this.props.remove(this.props.num - 1);
+	    },
+	    render: function render() {
+	        return _react2.default.createElement(
+	            'div',
+	            null,
+	            _react2.default.createElement(
+	                'label',
+	                { htmlFor: 'address' },
+	                'Network ',
+	                this.props.num
+	            ),
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'input-group input-group-sm' },
+	                _react2.default.createElement('input', { className: 'form-control', ref: 'address', onChange: this.handleChange, value: this.props.address }),
+	                _react2.default.createElement(
+	                    'span',
+	                    { className: 'input-group-btn' },
+	                    _react2.default.createElement(
+	                        'button',
+	                        { className: 'btn btn-default', type: 'button', onClick: this.remove },
+	                        _react2.default.createElement('span', { className: 'fa fa-close' })
+	                    )
+	                )
+	            )
+	        );
+	    }
+	});
+
+	/** Library imports */
+
+
+	var AggregationTab = _react2.default.createClass({
+	    displayName: 'AggregationTab',
+
+	    getInitialState: function getInitialState() {
+	        return { init: true, errors: [], networks: [{ num: 1, address: '' }, { num: 2, address: '' }] };
+	    },
+	    aggregate: function aggregate() {
+	        var ipType = this.refs.ipType.value;
+	        var subPrefix = this.refs.subPrefix.value;
+
+	        var networks = this.state.networks;
+
+	        var errorLog = [];
+	        (0, _ip.isValidPrefix)(subPrefix, ipType, errorLog); //check if prefix is valid
+	        //check if the addresses are valid ip address
+	        for (var subnet = 0; subnet < networks.length; subnet++) {
+	            //check if the network is a valid address
+	            if (!(0, _ip.isValidAddress)(networks[subnet].address, ipType)) {
+	                errorLog.push('Network ' + (subnet + 1) + ' has an invalid ipv' + ipType + ' address');
+	            } else {
+	                //check if the address given is really a network address using the give subnet mask /prefix
+	                if (!((0, _ip.currentNetwork)(networks[subnet].address, subPrefix) == networks[subnet].address)) {
+	                    errorLog.push('Network ' + (subnet + 1) + ' is not a network address using the current Subnet Mask /prefix');
+	                } else {
+	                    //check if there is no other match
+	                    var matchCount = 0;
+	                    var _iteratorNormalCompletion = true;
+	                    var _didIteratorError = false;
+	                    var _iteratorError = undefined;
+
+	                    try {
+	                        for (var _iterator = networks[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	                            var network = _step.value;
+
+	                            if (networks[subnet].address == network.address && networks[subnet].num != network.num) {
+	                                errorLog.push('Network ' + (subnet + 1) + ' has a similar address as Network ' + network.num);
+	                            }
+	                        }
+	                    } catch (err) {
+	                        _didIteratorError = true;
+	                        _iteratorError = err;
+	                    } finally {
+	                        try {
+	                            if (!_iteratorNormalCompletion && _iterator.return) {
+	                                _iterator.return();
+	                            }
+	                        } finally {
+	                            if (_didIteratorError) {
+	                                throw _iteratorError;
+	                            }
+	                        }
+	                    }
+	                }
+	            }
+	        }
+
+	        this.setState({ errors: errorLog });
+	        if (errorLog.length != 0) {
+	            return false;
+	        }
+
+	        //passed --continue to aggregate
+	        var workFile = [];
+
+	        var _aggregate2 = (0, _ip.aggregate)(networks, workFile),
+	            aggregatedNet = _aggregate2.aggregatedNet;
+
+	        var origPref = subPrefix.charAt(0) == '/' ? subPrefix : (0, _ipv.translateMask)(subPrefix);
+	        this.setState({ aggregatedNet: aggregatedNet, workFile: workFile, origPref: origPref, init: false });
+	    },
+	    reset: function reset() {
+	        this.setState({ init: true, errors: [], networks: [{ num: 1, address: '' }, { num: 2, address: '' }], workFile: [] });
+	    },
+	    updateNetwork: function updateNetwork(address, key) {
+	        var networks = this.state.networks;
+	        networks[key].address = address;
+	        this.setState({ networks: networks });
+	    },
+	    addNetwork: function addNetwork() {
+	        var networks = this.state.networks;
+	        networks.push({ num: networks.length + 1, address: '' });
+	        this.setState({ networks: networks, errors: [] });
+	    },
+	    remove: function remove(key) {
+	        var networks = this.state.networks;
+	        var errorLog = [];
+	        if (networks.length == 2) {
+	            errorLog.push("There must be at least 2 networks to perfom aggregation");
+	            this.setState({ errors: errorLog });
+	            return;
+	        } else if (key != networks.length - 1) {
+	            errorLog.push('You cannot remove network ' + (key + 1) + ' whilst network ' + networks.length + ' is in existence.Remove higher networks first!');
+	            this.setState({ errors: errorLog });
+	            return;
+	        }
+	        console.log(networks, key);
+	        networks.splice(key, 1);
+	        this.setState({ networks: networks, errors: [] });
+	    },
+	    normalRender: function normalRender() {
+	        var _this = this;
+
+	        //prep error log
+	        var aproFeedback = function aproFeedback() {};
+	        if (this.state.errors.length != 0) {
+	            aproFeedback = function aproFeedback() {
+	                return _react2.default.createElement(
+	                    'div',
+	                    null,
+	                    _react2.default.createElement(
+	                        'p',
+	                        null,
+	                        'Please Resolve the following issues'
+	                    ),
+	                    _this.state.errors.map(function (error, index) {
+	                        return _react2.default.createElement(
+	                            'div',
+	                            { className: 'alert alert-danger', key: index },
+	                            error
+	                        );
+	                    })
+	                );
+	            };
+	        }
+	        return _react2.default.createElement(
+	            'div',
+	            { className: 'row' },
+	            _react2.default.createElement(
+	                'form',
+	                { className: 'form col-sm-4' },
+	                _react2.default.createElement(
+	                    'label',
+	                    { className: '' },
+	                    'Type'
+	                ),
+	                _react2.default.createElement(
+	                    'select',
+	                    { className: 'form-control', ref: 'ipType' },
+	                    _react2.default.createElement(
+	                        'option',
+	                        { value: '4' },
+	                        'IPv4'
+	                    ),
+	                    _react2.default.createElement(
+	                        'option',
+	                        { value: '6' },
+	                        'IPv6'
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    'label',
+	                    { htmlFor: 'mask' },
+	                    'Mask/Prefix'
+	                ),
+	                _react2.default.createElement('input', { className: 'form-control', ref: 'subPrefix' }),
+	                _react2.default.createElement(
+	                    'label',
+	                    { htmlFor: 'networks' },
+	                    'Networks'
+	                ),
+	                _react2.default.createElement('hr', { style: { margin: 1 + 'px' } }),
+	                this.state.networks.map(function (network, index) {
+	                    return _react2.default.createElement(NetworkField, { ref: 'network_' + index, key: index, remove: _this.remove, updater: _this.updateNetwork, address: network.address, num: network.num });
+	                }),
+	                _react2.default.createElement('hr', null),
+	                _react2.default.createElement(
+	                    'div',
+	                    { style: { marginTop: 4 + 'px' } },
+	                    _react2.default.createElement(
+	                        'button',
+	                        { className: 'btn btn-default', type: 'button', onClick: this.addNetwork },
+	                        _react2.default.createElement('span', { className: 'glyphicon glyphicon-plus-sign' }),
+	                        ' Network'
+	                    ),
+	                    _react2.default.createElement(
+	                        'button',
+	                        { className: 'btn btn-default pull-right', type: 'button', onClick: this.aggregate },
+	                        'Aggregate'
+	                    )
+	                )
+	            ),
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'col-sm-4' },
+	                aproFeedback()
+	            )
+	        );
+	    },
+	    finalRender: function finalRender() {
+	        var _this2 = this;
+
+	        return _react2.default.createElement(
+	            'div',
+	            { className: 'row' },
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'col-sm-7' },
+	                _react2.default.createElement(
+	                    'p',
+	                    { className: 'well well-sm' },
+	                    'Successfully aggregated the networks'
+	                ),
+	                _react2.default.createElement(
+	                    'table',
+	                    { className: 'table table-bordered' },
+	                    _react2.default.createElement(
+	                        'caption',
+	                        null,
+	                        'Aggregated Network Information'
+	                    ),
+	                    _react2.default.createElement(
+	                        'thead',
+	                        null,
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'th',
+	                                null,
+	                                'Param'
+	                            ),
+	                            _react2.default.createElement(
+	                                'th',
+	                                null,
+	                                'Value'
+	                            )
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        'tbody',
+	                        null,
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Final Address'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.aggregatedNet.address
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Prefix'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                '/',
+	                                this.state.aggregatedNet.prefix
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Subnet mask'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.aggregatedNet.subMask
+	                            )
+	                        )
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    'table',
+	                    { className: 'table table-bordered' },
+	                    _react2.default.createElement(
+	                        'caption',
+	                        null,
+	                        'Input Networks'
+	                    ),
+	                    _react2.default.createElement(
+	                        'thead',
+	                        null,
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'th',
+	                                null,
+	                                'Networks'
+	                            )
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        'tbody',
+	                        null,
+	                        this.state.networks.map(function (network, index) {
+	                            return _react2.default.createElement(
+	                                'tr',
+	                                { key: index },
+	                                _react2.default.createElement(
+	                                    'td',
+	                                    null,
+	                                    network.address,
+	                                    _this2.state.origPref
+	                                )
+	                            );
+	                        })
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { style: { marginLeft: 1 + 'px', marginTop: 2 + 'px', borderRadius: 0 + 'px' }, type: 'button', onClick: this.reset, className: 'btn btn-default' },
+	                    'Reset'
+	                )
+	            ),
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'col-sm-5' },
+	                _react2.default.createElement(
+	                    'pre',
+	                    null,
+	                    _react2.default.createElement(
+	                        'h5',
+	                        null,
+	                        'Working console'
+	                    ),
+	                    _react2.default.createElement('hr', null),
+	                    this.state.workFile.map(function (val, index) {
+	                        return _react2.default.createElement(
+	                            'p',
+	                            { key: index },
+	                            val
+	                        );
+	                    })
+	                )
+	            )
+	        );
+	    },
+	    render: function render() {
+	        return _react2.default.createElement(
+	            'div',
+	            { className: 'col-lg-12' },
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'Header' },
+	                _react2.default.createElement(
+	                    'h3',
+	                    { className: 'head' },
+	                    'Aggregation/Route Summarization'
+	                )
+	            ),
+	            _react2.default.createElement('hr', null),
+	            this.state.init ? this.normalRender() : this.finalRender()
+	        );
+	    }
+	});
+
+	exports.default = AggregationTab;
+
+/***/ },
+/* 178 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var HostEntry = _react2.default.createClass({
+	    displayName: "HostEntry",
+
+	    getInitialState: function getInitialState() {
+	        return { assigned: false };
+	    },
+	    assign: function assign() {
+	        this.setState({ assigned: !this.state.assigned });
+	    },
+	    render: function render() {
+	        return _react2.default.createElement(
+	            "tr",
+	            null,
+	            _react2.default.createElement(
+	                "td",
+	                { ref: "hostNum" },
+	                "x"
+	            ),
+	            _react2.default.createElement(
+	                "td",
+	                { ref: "Address" },
+	                "xx.xx.xx.xx"
+	            ),
+	            _react2.default.createElement(
+	                "td",
+	                { ref: "assigned", className: "text-center" },
+	                _react2.default.createElement("input", { type: "checkbox", checked: this.state.assigned ? true : false, onChange: this.assign })
+	            ),
+	            _react2.default.createElement(
+	                "td",
+	                { ref: "device", style: { padding: 0 + 'px' } },
+	                _react2.default.createElement("input", { type: "text", placeholder: "enter device name", className: "form-control", style: { borderRadius: 0 + 'px', border: 'none', marginBottom: 0 + 'px' },
+	                    disabled: this.state.assigned ? true : false })
+	            ),
+	            _react2.default.createElement(
+	                "td",
+	                { ref: "extra", style: { padding: 0 + 'px' } },
+	                _react2.default.createElement("input", { type: "text", placeholder: "enter description", className: "form-control", style: { borderRadius: 0 + 'px', border: 'none', marginBottom: 0 + 'px' },
+	                    disabled: this.state.assigned ? true : false })
+	            )
+	        );
+	    }
+	});
+	var SchemaTab = _react2.default.createClass({
+	    displayName: "SchemaTab",
+
+	    getInitialState: function getInitialState() {
+	        return { init: true };
+	    },
+	    reset: function reset() {
+	        this.setState({ init: true });
+	    },
+	    loadSchema: function loadSchema() {
+	        this.setState({ init: false });
+	    },
+	    normalRender: function normalRender() {
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "row" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-3" },
+	                _react2.default.createElement(
+	                    "p",
+	                    { className: "well well-sm" },
+	                    "Analyse and manage a network with the schema tools!"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default", type: "button", onClick: this.loadSchema },
+	                    _react2.default.createElement("span", { className: "fa fa-file" }),
+	                    "\xA0Load Schema File "
+	                )
+	            )
+	        );
+	    },
+	    finalRender: function finalRender() {
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "row" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-12" },
+	                _react2.default.createElement(
+	                    "p",
+	                    { className: "well well-sm col-sm-6" },
+	                    "xx.xx.xx.xx Network Schema"
+	                ),
+	                _react2.default.createElement(
+	                    "div",
+	                    { className: "btn-group col-sm-4" },
+	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-save", title: "Save Schema" }),
+	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-trash", title: "Delete Schema" }),
+	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-close", type: "button", title: "Close Schema", onClick: this.reset })
+	                )
+	            ),
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col=sm-12" },
+	                _react2.default.createElement(
+	                    "p",
+	                    { className: "col-sm-3" },
+	                    "Network x of xx"
+	                ),
+	                _react2.default.createElement(
+	                    "div",
+	                    { className: "col-sm-2" },
+	                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-left" }),
+	                    "\xA0",
+	                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-right" })
+	                )
+	            ),
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-12" },
+	                _react2.default.createElement(
+	                    "div",
+	                    { className: "col-sm-9" },
+	                    _react2.default.createElement(
+	                        "div",
+	                        { className: "row" },
+	                        _react2.default.createElement(
+	                            "table",
+	                            { className: "table table-bordered" },
+	                            _react2.default.createElement(
+	                                "caption",
+	                                null,
+	                                "Hosts"
+	                            ),
+	                            _react2.default.createElement(
+	                                "thead",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "th",
+	                                        null,
+	                                        _react2.default.createElement("b", { className: "fa fa-hashtag" })
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "th",
+	                                        null,
+	                                        "Address"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "th",
+	                                        null,
+	                                        "Assigned"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "th",
+	                                        null,
+	                                        "Device"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "th",
+	                                        null,
+	                                        "Extra"
+	                                    )
+	                                )
+	                            ),
+	                            _react2.default.createElement(
+	                                "tbody",
+	                                null,
+	                                _react2.default.createElement(HostEntry, null),
+	                                _react2.default.createElement(HostEntry, null),
+	                                _react2.default.createElement(HostEntry, null),
+	                                _react2.default.createElement(HostEntry, null)
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            "div",
+	                            { className: "row" },
+	                            _react2.default.createElement(
+	                                "form",
+	                                { className: "form-inline col-sm-5" },
+	                                _react2.default.createElement(
+	                                    "div",
+	                                    { className: "form-group" },
+	                                    _react2.default.createElement(
+	                                        "label",
+	                                        { className: "sr-only", htmlFor: "subnet number" },
+	                                        "Go to"
+	                                    ),
+	                                    _react2.default.createElement("input", { className: "form-control", ref: "subBox", placeholder: "go to host page" })
+	                                ),
+	                                _react2.default.createElement(
+	                                    "button",
+	                                    { style: { marginLeft: 1 + 'px', marginTop: 2 + 'px', borderRadius: 0 + 'px' }, type: "button", onClick: this.setSub, className: "btn btn-default" },
+	                                    "Go"
+	                                )
+	                            ),
+	                            _react2.default.createElement(
+	                                "div",
+	                                { className: "5" },
+	                                _react2.default.createElement(
+	                                    "p",
+	                                    { className: "col-sm-3" },
+	                                    "Host Page x of xx"
+	                                ),
+	                                _react2.default.createElement(
+	                                    "div",
+	                                    { className: "col-sm-2" },
+	                                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-left" }),
+	                                    "\xA0",
+	                                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-right" })
+	                                )
+	                            )
+	                        )
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    "div",
+	                    { className: "col-sm-3" },
+	                    _react2.default.createElement(
+	                        "table",
+	                        { className: "table table-bordered" },
+	                        _react2.default.createElement(
+	                            "caption",
+	                            null,
+	                            "Block Info"
+	                        ),
+	                        _react2.default.createElement(
+	                            "thead",
+	                            null,
+	                            _react2.default.createElement(
+	                                "tr",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "th",
+	                                    null,
+	                                    "Param"
+	                                ),
+	                                _react2.default.createElement(
+	                                    "th",
+	                                    null,
+	                                    "Value"
+	                                )
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            "tbody",
+	                            null,
+	                            _react2.default.createElement(
+	                                "tr",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "td",
+	                                    null,
+	                                    "Size"
+	                                ),
+	                                _react2.default.createElement(
+	                                    "td",
+	                                    null,
+	                                    "xx:"
+	                                )
+	                            ),
+	                            _react2.default.createElement(
+	                                "tr",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "td",
+	                                    null,
+	                                    "Prefix"
+	                                ),
+	                                _react2.default.createElement(
+	                                    "td",
+	                                    null,
+	                                    "/xx"
+	                                )
+	                            ),
+	                            _react2.default.createElement(
+	                                "tr",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "td",
+	                                    null,
+	                                    "Submask:"
+	                                ),
+	                                _react2.default.createElement(
+	                                    "td",
+	                                    null,
+	                                    "xx.xx.xx.xx:"
+	                                )
+	                            ),
+	                            _react2.default.createElement(
+	                                "tr",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "td",
+	                                    null,
+	                                    "Class:"
+	                                ),
+	                                _react2.default.createElement(
+	                                    "td",
+	                                    null,
+	                                    "AA"
+	                                )
+	                            ),
+	                            _react2.default.createElement(
+	                                "tr",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "td",
+	                                    null,
+	                                    _react2.default.createElement("b", { className: "fa fa-hashtag" }),
+	                                    " of subnets"
+	                                ),
+	                                _react2.default.createElement(
+	                                    "td",
+	                                    null,
+	                                    "xx"
+	                                )
+	                            )
+	                        )
+	                    )
+	                )
+	            )
+	        );
+	    },
+	    render: function render() {
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "col-lg-12" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "Header" },
+	                _react2.default.createElement(
+	                    "h3",
+	                    { className: "head" },
+	                    "Schema"
+	                )
+	            ),
+	            _react2.default.createElement("hr", null),
+	            this.state.init ? this.normalRender() : this.finalRender()
+	        );
+	    }
+	});
+
+	exports.default = SchemaTab;
+
+/***/ },
+/* 179 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var MiscTab = _react2.default.createClass({
+	    displayName: "MiscTab",
+
+	    render: function render() {
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "col-lg-12" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "Header" },
+	                _react2.default.createElement(
+	                    "h3",
+	                    { className: "head" },
+	                    "Misc"
+	                )
+	            ),
+	            _react2.default.createElement("hr", null),
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-3" },
+	                _react2.default.createElement(
+	                    "h3",
+	                    null,
+	                    "Tools"
+	                ),
+	                _react2.default.createElement("hr", null),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "Find Network"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "Find Class"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "Convert"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "Translate"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "EUI-64"
+	                )
+	            ),
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-3" },
+	                _react2.default.createElement(
+	                    "h3",
+	                    null,
+	                    "Information"
+	                ),
+	                _react2.default.createElement("hr", null),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "Classes"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "Protocols"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "Ports"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "Standard Organisations"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "IP Versions"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "Special addresses"
+	                ),
+	                _react2.default.createElement(
+	                    "button",
+	                    { className: "btn btn-default btn-block" },
+	                    "Guidelines"
+	                )
+	            )
+	        );
+	    }
+	});
+
+	exports.default = MiscTab;
 
 /***/ }
 /******/ ]);

@@ -1,2 +1,4 @@
 #dependency folders 
 node_modules/
+*.log
+*.log.*

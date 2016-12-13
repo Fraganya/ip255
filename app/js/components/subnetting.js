@@ -2,26 +2,37 @@ import React from "react";
 
 import {isValidAddress} from "../lib/ip.js";
 import {isValidBits} from "../lib/ip.js";
-import {isValidPrefix} from "../lib/ip.js"
+import {isValidPrefix} from "../lib/ip.js";
+import {isDigit} from "../lib/ip.js";
+import {getBitsByReqs} from "../lib/ip.js";
+import {max_hosts} from "../lib/ip.js";
 import {currentNetwork} from '../lib/ip.js';
 import {subnet} from '../lib/ip.js';
 
-var SubnetField=React.createClass({
+let SubnetField=React.createClass({
      handleChange:function(){
-         var hosts=this.refs.hostCount.value;
+         let hosts=this.refs.hostCount.value;
          this.props.updater(hosts,(this.props.num-1));
+     },
+    remove:function(){
+         this.props.remove(this.props.num-1);
      },
      render:function(){
          return(
              <div>
             <label htmlFor="Subnet-Host">Subnet {this.props.num} required hosts</label>
-            <input className="form-control" ref="hostCount" onChange={this.handleChange} value={this.props.hosts} />
+             <div className="input-group input-group-sm">
+                <input className="form-control" ref="hostCount" onChange={this.handleChange} value={this.props.hosts} />
+                <span className="input-group-btn">
+                    <button className="btn btn-default" type="button" onClick={this.remove}><span className="fa fa-close"/></button>
+                </span>
+            </div>
             </div>
          )
          
      }
  });
- var SubnettedView=React.createClass({
+ let SubnettedView=React.createClass({
      render:function(){
          let master=this.props.master;
          return(
@@ -73,57 +84,77 @@ var SubnetField=React.createClass({
          )
      }
  })
- var SubnettingTab=React.createClass({
+ let SubnettingTab=React.createClass({
      getInitialState:function(){
          return {init:true,basic:true,reqSubnets:[{hosts:0,num:1}],subnetCount:1,useVLSM:false,errors:[]}
      },
      subnetBasic:function(){
-         var ipType=this.refs.ipType.value
-         var address=this.refs.address.value;
-         var subPrefix=this.refs.subPrefix.value;
-         var bitsToLend=this.refs.bitsToLend.value;
-         var errors=0;
-         var errorLog=[]
-         isValidAddress(address,ipType,errorLog) ? '' : errors++;
-         isValidPrefix(subPrefix,ipType,errorLog) ? '' : errors++;
-         isValidBits(bitsToLend,subPrefix,ipType,errorLog,) ?'' : errors++;
+         let ipType=this.refs.ipType.value
+         let address=this.refs.address.value;
+         let subPrefix=this.refs.subPrefix.value;
+         let bitsToLend=this.refs.bitsToLend.value;
+
+         let errorLog=[]
+
+         isValidAddress(address,ipType,errorLog);
+         isValidPrefix(subPrefix,ipType,errorLog);
+         isValidBits(bitsToLend,subPrefix,ipType,errorLog);
          console.log(errorLog);
          this.setState({errors:errorLog})
-         if(errors!=0){
+         if(errorLog.length!=0){
              return false;
          }
 
          let curIP=currentNetwork(address,subPrefix);
          let {subnets,subnetCount,usable,newSubMask,newPrefix,origBits}=subnet(address,subPrefix,bitsToLend);
-         this.setState({init:false,subnets,subnetCount,subMask:newSubMask,prefix:newPrefix,usable,curIP,bits:bitsToLend,curSub:0,origBits});
+         this.setState({init:false,subnets,subnetCount,subMask:newSubMask,prefix:newPrefix,usable,curIP,bits:bitsToLend,curSub:0,origBits,workFile:[]});
      },
      subnetAdvanced:function(){
-        var ipType=this.refs.ipType.value
-        var address=this.refs.address.value;
-        var subPrefix=this.refs.subPrefix.value;
-        var hostReqs=this.refs.hostReqs.value;
-        var subReqs=this.refs.subReqs.value;
-        validate_address(address,errorLog) ? errors++ : '';
-        validate_prefix(subPrefix,errorLog,ipType) ? erros++ :'';
-        validate_subReq(hostReqs,'Invalid Host requirenments',errorLog) ? erros++ :'';
-        validate_subReq(subReqs,'Invalid Host Requirenments',errorLog) ? erros++ :'';
+        let ipType=this.refs.ipType.value
+        let address=this.refs.address.value;
+        let subPrefix=this.refs.subPrefix.value;
+        let hostReqs=this.refs.hostReqs.value;
+        let subReqs=this.refs.subReqs.value;
+
+        let errorLog=[];
+
+        isValidAddress(address,ipType,errorLog);
+        isValidPrefix(subPrefix,ipType,errorLog);
+        isDigit(hostReqs,'host requirenment',errorLog);
+        isDigit(subReqs,'subnet requirenment',errorLog);
+
+        //check if the host requirenments are not exceeding the max size of the block
+        if(max_hosts(subPrefix)<hostReqs){
+            errorLog.push(`The host requirenments exceed the maximum size of the network ${max_hosts(subPrefix)},Use another address block!`);
+        }
+        console.log(errorLog);
+        this.setState({errors:errorLog})
+        if(errorLog.length!=0){
+             return false;
+        }
+
+        let curIP=currentNetwork(address,subPrefix);
+        let workFile=[];
+        let bitsToLend=getBitsByReqs(subPrefix,{hostReqs,subReqs},workFile);
+        let {subnets,subnetCount,usable,newSubMask,newPrefix,origBits}=subnet(address,subPrefix,bitsToLend);
+        this.setState({init:false,subnets,subnetCount,subMask:newSubMask,prefix:newPrefix,usable,curIP,bits:bitsToLend,curSub:0,origBits,workFile});
      },
      subnetWithVLSM:function(){
-        var ipType=this.refs.ipType.value
-        var address=this.refs.address.value;
-        var subPrefix=this.refs.subPrefix.value;
+        let ipType=this.refs.ipType.value
+        let address=this.refs.address.value;
+        let subPrefix=this.refs.subPrefix.value;
         validate_address(address,errorLog) ? errors++ : '';
         validate_prefix(subPrefix,errorLog,ipType) ? erros++ :'';
-        var subnetHostReqs=[]
+        let subnetHostReqs=[]
         this.state.reqSubnets.map(function(subnet,index){
             subnetHostReqs.push({subnet:subnet.num,hosts:subnet.hosts});
         });
-        for(var index=0;index<subnetHostReqs.length;index++){
+        for(let index=0;index<subnetHostReqs.length;index++){
             validate_subReq(subnetHostReqs[index].hosts,"Invalid requirenments for subnet :"+subnetHostReqs[index].num,errorLog)
         }
      },
      modeChange:function(){
-         var mode=this.refs.mode.value;
+         let mode=this.refs.mode.value;
          if(mode==="basic"){
              this.setState({basic:true})
          }
@@ -154,11 +185,11 @@ var SubnetField=React.createClass({
      },
      reset:function()
      {
-          this.setState({init:true,subnets:[],subnetCount:0,subMask:0,prefix:0,usable:0,curIP:0,bits:0,curSub:0});
+          this.setState({init:true,subnets:[],subnetCount:0,subMask:0,prefix:0,usable:0,curIP:0,bits:0,curSub:0,workFile:[]});
      },
      useVLSM:function(){
          if(this.state.useVLSM){
-              var initState=[{hosts:0,num:1}]
+              let initState=[{hosts:0,num:1}]
               this.setState({useVLSM:!this.state.useVLSM,reqSubnets:initState,subnetCount:1});
          }
          else{
@@ -167,22 +198,37 @@ var SubnetField=React.createClass({
         
      },
      addSubnet:function(){
-         var subCount=this.state.subnetCount;
-         var reqSubnets=this.state.reqSubnets;
-         reqSubnets.push({hosts:0,num:subCount+1});
-         this.setState({reqSubnets:reqSubnets,subnetCount:subCount+1});
+         let reqSubnets=this.state.reqSubnets;
+         reqSubnets.push({hosts:0,num:reqSubnets.length+1});
+         this.setState({reqSubnets:reqSubnets,subnetCount:reqSubnets.length+1,errors:[]});
      },
      updateSubnet:function(val,key){
-         var reqSubnets=this.state.reqSubnets;
+         let reqSubnets=this.state.reqSubnets;
          reqSubnets[key].hosts=val;
          this.setState({reqSubnets:reqSubnets});
      },
+    remove:function(key){
+         let reqSubnets=this.state.reqSubnets;
+          let errorLog=[];
+         if(reqSubnets.length==1){
+             errorLog.push("There must be at least 1 subnet");
+             this.setState({errors:errorLog});
+             return;
+         }
+        else if(key!=reqSubnets.length-1){
+             errorLog.push(`You cannot remove subnet ${key+1} whilst subnet ${reqSubnets.length} is in existence.Remove higher subnets first!`);
+             this.setState({errors:errorLog});
+             return;
+         }
+         reqSubnets.splice(key,1);
+         this.setState({reqSubnets,errors:[]});
+     },
      normalRender:function(){
-         var aproParams=undefined;
-         var aproFeedback=function(){};
-         var aproSubnet=undefined;
+         let aproParams=undefined;
+         let aproFeedback=function(){};
+         let aproSubnet=undefined;
          if(this.state.basic){
-             aproParams=function(){
+             aproParams=()=>{
                 return(
                      <div>
                      <label htmlFor="bits-to-borrow">Bits to borrow</label>
@@ -193,7 +239,7 @@ var SubnetField=React.createClass({
              aproSubnet=this.subnetBasic;
          }
          else if(!this.state.basic && !this.state.useVLSM){
-             aproParams=function(){
+             aproParams=()=>{
                  return(
                      <div>
                      <label htmlFor="Host-requirenments">Host Requirenments</label>
@@ -203,16 +249,16 @@ var SubnetField=React.createClass({
                      <div className="checkbox"> <label><input type="checkbox" onChange={this.useVLSM} checked={this.state.useVLSM}/>use VLSM</label></div> 
                      </div>
                  )
-             }.bind(this);
+             }
               aproSubnet=this.subnetAdvanced;
          }
          else{
-             aproParams=function(){
+             aproParams=()=>{
                  return(
                      <div>
                      {this.state.reqSubnets.map(function(subnet,index){
                          return(
-                             <SubnetField ref={'vlsmSub_'+subnet.num}key={index} updater={this.updateSubnet} num={subnet.num} hosts={subnet.hosts} />
+                             <SubnetField ref={'vlsmSub_'+subnet.num} remove={this.remove} key={index} updater={this.updateSubnet} num={subnet.num} hosts={subnet.hosts} />
                          )}.bind(this))
                      }
                     <div className="row">
@@ -225,24 +271,24 @@ var SubnetField=React.createClass({
                     </div>
                     </div>
                  )
-             }.bind(this);
+             }
               aproSubnet=this.subnetWithVLSM;
          }
 
          //prep error log
          if(this.state.errors.length!=0){
-             aproFeedback=function(){
+             aproFeedback=()=>{
                  return(
                     <div>
                     <p>Please Resolve the following issues</p>
                     {
-                        this.state.errors.map(function(error,index){
+                        this.state.errors.map((error,index)=>{
                            return <div className="alert alert-danger" key={index}>{error}</div>
                          })
                     }
                     </div>
                  )
-             }.bind(this);
+             }
          }
          return(
              <div className="row">
@@ -307,6 +353,13 @@ var SubnetField=React.createClass({
                     <pre>  
                       <h5>Working console</h5>
                       <hr/>
+                      {
+                          this.state.workFile.map(function(val,index){
+                              return(
+                                  <p key={index}>{val}</p>
+                              )
+                          })
+                      }
                      </pre> 
                 </div>
             </div>
