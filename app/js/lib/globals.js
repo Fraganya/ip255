@@ -31,4 +31,27 @@ export const MAX_V4_BITS=32;
  */
 export const MAX_V6_BITS=128;
 
+export const VERSIONS=[
+    {
+        version:4,
+        bits:32,
+        total_space:'3.4 Billion (Theoritical)',
+        format:'Decimal',
+        implemented:"---",
+        rfc:'---',
+        description:"32 bit binary number represented as 4 octets used by the internet protocol layer (OSI layer 3) for delivering packets to end devices",
+        security:"N/A"
+    },
+     {
+        version:6,
+        bits:128,
+        total_space:'340 Undecillion',
+        format:'Hexadecimal',
+        implemented:"---",
+        rfc:'---',
+        description:"128 bit binary number represented as 8 octets used by the internet protocol layer (OSI layer 3) for delivering packets to end devices",
+        security:"MD5"
+    }
+];
+
  

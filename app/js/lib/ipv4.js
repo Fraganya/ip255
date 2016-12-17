@@ -77,7 +77,7 @@ export function binOctet(binVal)
  */
 export  function getClass(address){
     let octet_1=parseInt(address.split('.')[0]);
-    if((octet_1>=0) && (octet_1<=126))
+    if((octet_1>=0) && (octet_1<=127))
          return 'A';
     else if((octet_1>=128) && (octet_1<=191))
         return 'B'
@@ -91,6 +91,7 @@ export  function getClass(address){
         return undefined;
     }
 }
+
 
 /**
  * calculates the target octets to manipulate bits in

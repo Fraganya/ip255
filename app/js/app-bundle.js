@@ -58,31 +58,26 @@
 
 	var _subnetting2 = _interopRequireDefault(_subnetting);
 
-	var _supernet = __webpack_require__(176);
-
-	var _supernet2 = _interopRequireDefault(_supernet);
-
-	var _aggregation = __webpack_require__(177);
+	var _aggregation = __webpack_require__(176);
 
 	var _aggregation2 = _interopRequireDefault(_aggregation);
 
-	var _schema = __webpack_require__(178);
+	var _schema = __webpack_require__(177);
 
 	var _schema2 = _interopRequireDefault(_schema);
 
-	var _misc = __webpack_require__(179);
+	var _misc = __webpack_require__(178);
 
 	var _misc2 = _interopRequireDefault(_misc);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	/** Render components int target tabs */
-	_reactDom2.default.render(_react2.default.createElement(_subnetting2.default, null), document.getElementById("subnetting"));
+
 
 	/** Components */
 	/** Libraries */
-
-	_reactDom2.default.render(_react2.default.createElement(_supernet2.default, null), document.getElementById("supernet"));
+	_reactDom2.default.render(_react2.default.createElement(_subnetting2.default, null), document.getElementById("subnetting"));
 	_reactDom2.default.render(_react2.default.createElement(_aggregation2.default, null), document.getElementById("aggregation"));
 	_reactDom2.default.render(_react2.default.createElement(_schema2.default, null), document.getElementById("schema"));
 	_reactDom2.default.render(_react2.default.createElement(_misc2.default, null), document.getElementById("misc"));
@@ -22143,6 +22138,7 @@
 	exports.isDigit = isDigit;
 	exports.max_hosts = max_hosts;
 	exports.aggregate = aggregate;
+	exports.getClassInfo = getClassInfo;
 
 	var _globals = __webpack_require__(174);
 
@@ -22459,6 +22455,47 @@
 	    workFile.push("Summarized network is " + aggregatedNet.address + "/" + prefix);
 	    return { aggregatedNet: aggregatedNet };
 	}
+	function getClassInfo(netClass) {
+	    var subnets = void 0,
+	        prefix = void 0,
+	        range = void 0,
+	        subMask = void 0,
+	        blockSize = void 0;
+
+	    if (netClass == 'A') {
+	        subnets = subnetCount(7);
+	        prefix = '/8';
+	        subMask = "255.0.0.0";
+	        range = '0.0.0.0-127.0.0.0';
+	        blockSize = hostCount(24) + 2;
+	    } else if (netClass == 'B') {
+	        subnets = subnetCount(14);
+	        prefix = '/16';
+	        subMask = "255.255.0.0";
+	        range = '128.0.0.0-191.0.0.0';
+	        blockSize = hostCount(16) + 2;
+	    } else if (netClass == 'C') {
+	        subnets = subnetCount(21);
+	        prefix = '/24';
+	        subMask = "255.255.255.0";
+	        range = '192.0.0.0-223.0.0.0';
+	        blockSize = hostCount(8) + 2;
+	    } else if (netClass == 'D') {
+	        subnets = '---';
+	        prefix = '/24';
+	        subMask = "255.255.255.0";
+	        range = '224.0.0.0-239.0.0.0';
+	        blockSize = "---";
+	    } else if (netClass == 'E') {
+	        subnets = '---';
+	        prefix = '/24';
+	        range = '240.0.0.0-255.0.0.0';
+	        subMask = "255.255.255.0";
+	        blockSize = "---";
+	    }
+
+	    return { range: range, prefix: prefix, subMask: subMask, blockSize: blockSize, subnets: subnets };
+	}
 	/**
 	 * for debugging 
 	 */
@@ -22501,6 +22538,26 @@
 	 * Maximum number of bits for an ipv6 address
 	 */
 	var MAX_V6_BITS = exports.MAX_V6_BITS = 128;
+
+	var VERSIONS = exports.VERSIONS = [{
+	  version: 4,
+	  bits: 32,
+	  total_space: '3.4 Billion (Theoritical)',
+	  format: 'Decimal',
+	  implemented: "---",
+	  rfc: '---',
+	  description: "32 bit binary number represented as 4 octets used by the internet protocol layer (OSI layer 3) for delivering packets to end devices",
+	  security: "N/A"
+	}, {
+	  version: 6,
+	  bits: 128,
+	  total_space: '340 Undecillion',
+	  format: 'Hexadecimal',
+	  implemented: "---",
+	  rfc: '---',
+	  description: "128 bit binary number represented as 8 octets used by the internet protocol layer (OSI layer 3) for delivering packets to end devices",
+	  security: "MD5"
+	}];
 
 /***/ },
 /* 175 */
@@ -22597,7 +22654,7 @@
 	 */
 	function getClass(address) {
 	    var octet_1 = parseInt(address.split('.')[0]);
-	    if (octet_1 >= 0 && octet_1 <= 126) return 'A';else if (octet_1 >= 128 && octet_1 <= 191) return 'B';else if (octet_1 >= 192 && octet_1 <= 223) return 'C';else if (octet_1 >= 224 && octet_1 <= 239) return 'D';else if (octet_1 >= 240 && octet_1 <= 255) return 'E'; //reserved
+	    if (octet_1 >= 0 && octet_1 <= 127) return 'A';else if (octet_1 >= 128 && octet_1 <= 191) return 'B';else if (octet_1 >= 192 && octet_1 <= 223) return 'C';else if (octet_1 >= 224 && octet_1 <= 239) return 'D';else if (octet_1 >= 240 && octet_1 <= 255) return 'E'; //reserved
 	    else {
 	            return undefined;
 	        }
@@ -22676,336 +22733,6 @@
 
 /***/ },
 /* 176 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
-
-	var _react = __webpack_require__(1);
-
-	var _react2 = _interopRequireDefault(_react);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	var SupernetTab = _react2.default.createClass({
-	    displayName: "SupernetTab",
-
-	    getInitialState: function getInitialState() {
-	        return { init: true, errors: [] };
-	    },
-	    supernet: function supernet() {
-	        this.setState({ init: false });
-	    },
-	    reset: function reset() {
-	        this.setState({ init: true });
-	    },
-	    normalRender: function normalRender() {
-	        var _this = this;
-
-	        //prep error log
-	        var aproFeedback = function aproFeedback() {};
-	        if (this.state.errors.length != 0) {
-	            aproFeedback = function aproFeedback() {
-	                return _react2.default.createElement(
-	                    "div",
-	                    null,
-	                    _react2.default.createElement(
-	                        "p",
-	                        null,
-	                        "Please Resolve the following issues"
-	                    ),
-	                    _this.state.errors.map(function (error, index) {
-	                        return _react2.default.createElement(
-	                            "div",
-	                            { className: "alert alert-danger", key: index },
-	                            error
-	                        );
-	                    })
-	                );
-	            };
-	        }
-
-	        return _react2.default.createElement(
-	            "div",
-	            { className: "row" },
-	            _react2.default.createElement(
-	                "form",
-	                { className: "form col-sm-4" },
-	                _react2.default.createElement(
-	                    "label",
-	                    { className: "" },
-	                    "Type"
-	                ),
-	                _react2.default.createElement(
-	                    "select",
-	                    { className: "form-control", ref: "ipType" },
-	                    _react2.default.createElement(
-	                        "option",
-	                        { value: "4" },
-	                        "IPv4"
-	                    ),
-	                    _react2.default.createElement(
-	                        "option",
-	                        { value: "6" },
-	                        "IPv6"
-	                    )
-	                ),
-	                _react2.default.createElement(
-	                    "label",
-	                    { htmlFor: "address" },
-	                    "Address"
-	                ),
-	                _react2.default.createElement("input", { className: "form-control", ref: "address" }),
-	                _react2.default.createElement(
-	                    "label",
-	                    { htmlFor: "subnet" },
-	                    "Subnet/Prefix"
-	                ),
-	                _react2.default.createElement("input", { className: "form-control", ref: "subPrefix" }),
-	                _react2.default.createElement(
-	                    "label",
-	                    { htmlFor: "subnet" },
-	                    "Hosts required"
-	                ),
-	                _react2.default.createElement("input", { className: "form-control", ref: "hostReq" }),
-	                _react2.default.createElement("hr", null),
-	                _react2.default.createElement(
-	                    "div",
-	                    { style: { marginTop: 4 + 'px' } },
-	                    _react2.default.createElement(
-	                        "button",
-	                        { className: "btn btn-default pull-right", type: "button", onClick: this.supernet },
-	                        "Supernet"
-	                    )
-	                )
-	            ),
-	            _react2.default.createElement(
-	                "div",
-	                { className: "col-sm-4" },
-	                aproFeedback()
-	            )
-	        );
-	    },
-	    finalRender: function finalRender() {
-	        return _react2.default.createElement(
-	            "div",
-	            { className: "row" },
-	            _react2.default.createElement(
-	                "div",
-	                { className: "col-sm-7" },
-	                _react2.default.createElement(
-	                    "p",
-	                    { className: "well well-sm col-sm-12" },
-	                    "Successfully supernetted the xx.xx.xx.xx network by turning off xx network bits"
-	                ),
-	                _react2.default.createElement(
-	                    "table",
-	                    { className: "table table-bordered col-sm-6" },
-	                    _react2.default.createElement(
-	                        "caption",
-	                        null,
-	                        "New  Network Info"
-	                    ),
-	                    _react2.default.createElement(
-	                        "thead",
-	                        null,
-	                        _react2.default.createElement(
-	                            "tr",
-	                            null,
-	                            _react2.default.createElement(
-	                                "th",
-	                                null,
-	                                "Param"
-	                            ),
-	                            _react2.default.createElement(
-	                                "th",
-	                                null,
-	                                "Value"
-	                            )
-	                        )
-	                    ),
-	                    _react2.default.createElement(
-	                        "tbody",
-	                        null,
-	                        _react2.default.createElement(
-	                            "tr",
-	                            null,
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "Network"
-	                            ),
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "xx.xx.xx.xx:"
-	                            )
-	                        ),
-	                        _react2.default.createElement(
-	                            "tr",
-	                            null,
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "Prefix"
-	                            ),
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "xx:"
-	                            )
-	                        ),
-	                        _react2.default.createElement(
-	                            "tr",
-	                            null,
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "Mask"
-	                            ),
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "xx.xx.xx.xx:"
-	                            )
-	                        ),
-	                        _react2.default.createElement(
-	                            "tr",
-	                            null,
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "Hosts"
-	                            ),
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "xx.xx.xx.xx:"
-	                            )
-	                        )
-	                    )
-	                ),
-	                _react2.default.createElement(
-	                    "table",
-	                    { className: "table table-bordered col-sm-6" },
-	                    _react2.default.createElement(
-	                        "caption",
-	                        null,
-	                        "Old  Network Info"
-	                    ),
-	                    _react2.default.createElement(
-	                        "thead",
-	                        null,
-	                        _react2.default.createElement(
-	                            "tr",
-	                            null,
-	                            _react2.default.createElement(
-	                                "th",
-	                                null,
-	                                "Param"
-	                            ),
-	                            _react2.default.createElement(
-	                                "th",
-	                                null,
-	                                "Value"
-	                            )
-	                        )
-	                    ),
-	                    _react2.default.createElement(
-	                        "tbody",
-	                        null,
-	                        _react2.default.createElement(
-	                            "tr",
-	                            null,
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "Network"
-	                            ),
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "xx.xx.xx.xx:"
-	                            )
-	                        ),
-	                        _react2.default.createElement(
-	                            "tr",
-	                            null,
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "Prefix"
-	                            ),
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "xx:"
-	                            )
-	                        ),
-	                        _react2.default.createElement(
-	                            "tr",
-	                            null,
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "Mask"
-	                            ),
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "xx.xx.xx.xx:"
-	                            )
-	                        ),
-	                        _react2.default.createElement(
-	                            "tr",
-	                            null,
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "Hosts"
-	                            ),
-	                            _react2.default.createElement(
-	                                "td",
-	                                null,
-	                                "xx.xx.xx.xx:"
-	                            )
-	                        )
-	                    )
-	                ),
-	                _react2.default.createElement(
-	                    "button",
-	                    { style: { marginLeft: 1 + 'px', marginTop: 2 + 'px', borderRadius: 0 + 'px' }, type: "button", onClick: this.reset, className: "btn btn-default" },
-	                    "Reset"
-	                )
-	            )
-	        );
-	    },
-	    render: function render() {
-	        return _react2.default.createElement(
-	            "div",
-	            { className: "col-lg-12" },
-	            _react2.default.createElement(
-	                "div",
-	                { className: "Header" },
-	                _react2.default.createElement(
-	                    "h3",
-	                    { className: "head" },
-	                    "Supernet"
-	                )
-	            ),
-	            _react2.default.createElement("hr", null),
-	            this.state.init ? this.normalRender() : this.finalRender()
-	        );
-	    }
-	});
-
-	exports.default = SupernetTab;
-
-/***/ },
-/* 177 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -23430,7 +23157,7 @@
 	exports.default = AggregationTab;
 
 /***/ },
-/* 178 */
+/* 177 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -23788,7 +23515,752 @@
 	exports.default = SchemaTab;
 
 /***/ },
+/* 178 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _findNet = __webpack_require__(179);
+
+	var _findNet2 = _interopRequireDefault(_findNet);
+
+	var _findClass = __webpack_require__(180);
+
+	var _findClass2 = _interopRequireDefault(_findClass);
+
+	var _specialAddresses = __webpack_require__(181);
+
+	var _specialAddresses2 = _interopRequireDefault(_specialAddresses);
+
+	var _protocols = __webpack_require__(182);
+
+	var _protocols2 = _interopRequireDefault(_protocols);
+
+	var _classes = __webpack_require__(183);
+
+	var _classes2 = _interopRequireDefault(_classes);
+
+	var _ipVersions = __webpack_require__(184);
+
+	var _ipVersions2 = _interopRequireDefault(_ipVersions);
+
+	var _guidelines = __webpack_require__(185);
+
+	var _guidelines2 = _interopRequireDefault(_guidelines);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var MiscTab = _react2.default.createClass({
+	    displayName: 'MiscTab',
+	    getInitialState: function getInitialState() {
+	        return { view: 'init', currentView: 'Tasks' };
+	    },
+	    reset: function reset() {
+	        this.setState({ view: 'init', currentView: 'Tasks' });
+	    },
+
+	    //view alteering functions
+	    findNet: function findNet() {
+	        this.setState({ view: 'find-net', currentView: 'Find Network' });
+	    },
+	    findClass: function findClass() {
+	        this.setState({ view: 'find-class', currentView: 'Find Class' });
+	    },
+	    convert: function convert() {
+	        this.setState({ view: 'convert', currentView: 'Convert' });
+	    },
+	    translate: function translate() {
+	        this.setState({ view: 'translate', currentView: 'Translate' });
+	    },
+	    eui64: function eui64() {
+	        this.setState({ view: 'eui-64', currentView: 'EUI-64' });
+	    },
+	    classView: function classView() {
+	        this.setState({ view: 'classes', currentView: 'IP Classes' });
+	    },
+	    protoView: function protoView() {
+	        this.setState({ view: 'protocols-ports', currentView: 'Protocols' });
+	    },
+	    specAdds: function specAdds() {
+	        this.setState({ view: 'spec-adds', currentView: 'Special Addresses' });
+	    },
+	    ipVerView: function ipVerView() {
+	        this.setState({ view: 'ip-versions', currentView: 'IP Versions' });
+	    },
+	    guideView: function guideView() {
+	        this.setState({ view: 'guidelines', currentView: 'Guidelines' });
+	    },
+	    taskView: function taskView() {
+	        return _react2.default.createElement(
+	            'div',
+	            null,
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'col-sm-3' },
+	                _react2.default.createElement(
+	                    'h3',
+	                    null,
+	                    'Tools'
+	                ),
+	                _react2.default.createElement('hr', null),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default btn-block', onClick: this.findNet },
+	                    'Find Network'
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default btn-block', onClick: this.findClass },
+	                    'Find Class'
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default btn-block', onClick: this.convert },
+	                    'Convert'
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default btn-block', onClick: this.translate },
+	                    'Translate'
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default btn-block', onClick: this.eui64 },
+	                    'EUI-64'
+	                )
+	            ),
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'col-sm-3' },
+	                _react2.default.createElement(
+	                    'h3',
+	                    null,
+	                    'Information'
+	                ),
+	                _react2.default.createElement('hr', null),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default btn-block', onClick: this.classView },
+	                    'Classes '
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default btn-block', onClick: this.protoView },
+	                    'Protocols & Ports'
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default btn-block', onClick: this.specAdds },
+	                    'Special Addresses'
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default btn-block', onClick: this.ipVerView },
+	                    'IP Versions'
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default btn-block', onClick: this.guideView },
+	                    'Guidelines'
+	                )
+	            )
+	        );
+	    },
+
+	    render: function render() {
+	        var _this = this;
+
+	        var view = function view() {};
+	        if (this.state.view == 'find-net') view = function view() {
+	            return _react2.default.createElement(_findNet2.default, { 'return': _this.reset });
+	        };else if (this.state.view == 'find-class') view = function view() {
+	            return _react2.default.createElement(_findClass2.default, { 'return': _this.reset });
+	        };else if (this.state.view == 'convert') view = function view() {
+	            return _react2.default.createElement(ConvertTab, { 'return': _this.reset });
+	        };else if (this.state.view == 'translate') view = function view() {
+	            return _react2.default.createElement(TranslateTab, { 'return': _this.reset });
+	        };else if (this.state.view == 'eui64') view = function view() {
+	            return _react2.default.createElement(EUI64Tab, { 'return': _this.reset });
+	        };else if (this.state.view == 'classes') view = function view() {
+	            return _react2.default.createElement(_classes2.default, { 'return': _this.reset });
+	        };else if (this.state.view == 'protocols-ports') view = function view() {
+	            return _react2.default.createElement(_protocols2.default, { 'return': _this.reset });
+	        };else if (this.state.view == 'spec-adds') view = function view() {
+	            return _react2.default.createElement(_specialAddresses2.default, { 'return': _this.reset });
+	        };else if (this.state.view == 'ip-versions') view = function view() {
+	            return _react2.default.createElement(_ipVersions2.default, { 'return': _this.reset });
+	        };else if (this.state.view == 'guidelines') view = function view() {
+	            return _react2.default.createElement(_guidelines2.default, { 'return': _this.reset });
+	        };else {
+	            view = function view() {
+	                return _this.taskView();
+	            };
+	        }
+	        return _react2.default.createElement(
+	            'div',
+	            { className: 'col-lg-12' },
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'Header' },
+	                _react2.default.createElement(
+	                    'h3',
+	                    { className: 'head' },
+	                    'Misc/',
+	                    this.state.currentView
+	                )
+	            ),
+	            _react2.default.createElement('hr', null),
+	            view()
+	        );
+	    }
+	});
+
+	exports.default = MiscTab;
+
+/***/ },
 /* 179 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _ip = __webpack_require__(173);
+
+	var _ipv = __webpack_require__(175);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var FindNetTab = _react2.default.createClass({
+	    displayName: 'FindNetTab',
+	    getInitialState: function getInitialState() {
+	        return { init: true, errors: [] };
+	    },
+	    AND: function AND() {
+	        var ipType = this.refs.ipType.value;
+	        var address = this.refs.address.value;
+	        var subPrefix = this.refs.subPrefix.value;
+
+	        var errorLog = [];
+	        (0, _ip.isValidPrefix)(subPrefix, ipType, errorLog);
+	        (0, _ip.isValidAddress)(address, ipType, errorLog);
+
+	        this.setState({ errors: errorLog });
+	        if (errorLog.length != 0) {
+	            return;
+	        }
+
+	        var netAddress = void 0,
+	            prefix = void 0,
+	            subMask = void 0,
+	            blockSize = void 0;
+	        if (ipType == 4) {
+	            netAddress = (0, _ip.currentNetwork)(address, subPrefix);
+	            prefix = subPrefix.charAt(0) == '/' ? subPrefix : (0, _ipv.translateMask)(subPrefix);
+	            subMask = subPrefix.charAt(0) == '/' ? (0, _ipv.translatePrefix)(subPrefix.substring(1, subPrefix.length)) : subPrefix;
+	            blockSize = parseInt((0, _ip.max_hosts)(subPrefix)) + 2;
+	        } else {
+	            console.log("Unssupported");
+	            return;
+	        }
+
+	        this.setState({ netAddress: netAddress, prefix: prefix, subMask: subMask, blockSize: blockSize, init: false });
+	    },
+	    normalRender: function normalRender() {
+	        var _this = this;
+
+	        var aproFeedback = function aproFeedback() {};
+	        if (this.state.errors.length != 0) {
+	            aproFeedback = function aproFeedback() {
+	                return _react2.default.createElement(
+	                    'div',
+	                    null,
+	                    _react2.default.createElement(
+	                        'p',
+	                        null,
+	                        'Please Resolve the following issues'
+	                    ),
+	                    _this.state.errors.map(function (error, index) {
+	                        return _react2.default.createElement(
+	                            'div',
+	                            { className: 'alert alert-danger', key: index },
+	                            error
+	                        );
+	                    })
+	                );
+	            };
+	        }
+	        return _react2.default.createElement(
+	            'div',
+	            { className: 'row' },
+	            _react2.default.createElement(
+	                'form',
+	                { className: 'form col-sm-4' },
+	                _react2.default.createElement(
+	                    'label',
+	                    { className: '' },
+	                    'Type'
+	                ),
+	                _react2.default.createElement(
+	                    'select',
+	                    { className: 'form-control', ref: 'ipType' },
+	                    _react2.default.createElement(
+	                        'option',
+	                        { value: '4' },
+	                        'IPv4'
+	                    ),
+	                    _react2.default.createElement(
+	                        'option',
+	                        { value: '6' },
+	                        'IPv6'
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    'label',
+	                    { htmlFor: 'address' },
+	                    'Address'
+	                ),
+	                _react2.default.createElement('input', { className: 'form-control', ref: 'address' }),
+	                _react2.default.createElement(
+	                    'label',
+	                    { htmlFor: 'mask' },
+	                    'Mask/Prefix'
+	                ),
+	                _react2.default.createElement('input', { className: 'form-control', ref: 'subPrefix' }),
+	                _react2.default.createElement('hr', null),
+	                _react2.default.createElement(
+	                    'div',
+	                    { style: { marginTop: 4 + 'px' } },
+	                    _react2.default.createElement(
+	                        'button',
+	                        { className: 'btn btn-default', type: 'button', onClick: this.props.return },
+	                        _react2.default.createElement('span', { className: 'fa fa-undo' }),
+	                        ' Go back'
+	                    ),
+	                    _react2.default.createElement(
+	                        'button',
+	                        { className: 'btn btn-default pull-right', type: 'button', onClick: this.AND },
+	                        'AND'
+	                    )
+	                )
+	            ),
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'col-sm-4' },
+	                aproFeedback()
+	            )
+	        );
+	    },
+	    finalRender: function finalRender() {
+	        var _this2 = this;
+
+	        return _react2.default.createElement(
+	            'div',
+	            { className: 'row' },
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'col-sm-7' },
+	                _react2.default.createElement(
+	                    'p',
+	                    { className: 'well well-sm' },
+	                    'Successfully ANDED the Address'
+	                ),
+	                _react2.default.createElement(
+	                    'table',
+	                    { className: 'table table-bordered' },
+	                    _react2.default.createElement(
+	                        'caption',
+	                        null,
+	                        'Network Information'
+	                    ),
+	                    _react2.default.createElement(
+	                        'thead',
+	                        null,
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'th',
+	                                null,
+	                                'Param'
+	                            ),
+	                            _react2.default.createElement(
+	                                'th',
+	                                null,
+	                                'Value'
+	                            )
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        'tbody',
+	                        null,
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Network Address'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.netAddress
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Prefix'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.prefix
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Subnet mask'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.subMask
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Block Size'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.blockSize
+	                            )
+	                        )
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default', type: 'button', onClick: function onClick() {
+	                            _this2.setState({ init: true });
+	                        } },
+	                    _react2.default.createElement('span', { className: 'fa fa-undo' }),
+	                    ' reset'
+	                )
+	            )
+	        );
+	    },
+	    render: function render() {
+	        return _react2.default.createElement(
+	            'div',
+	            null,
+	            this.state.init ? this.normalRender() : this.finalRender()
+	        );
+	    }
+	});
+
+	exports.default = FindNetTab;
+
+/***/ },
+/* 180 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _ip = __webpack_require__(173);
+
+	var _ipv = __webpack_require__(175);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var FindClassTab = _react2.default.createClass({
+	    displayName: 'FindClassTab',
+	    getInitialState: function getInitialState() {
+	        return { init: true, errors: [] };
+	    },
+	    findClass: function findClass() {
+	        var address = this.refs.address.value;
+
+	        var errorLog = [];
+	        (0, _ip.isValidAddress)(address, '4', errorLog);
+
+	        this.setState({ errors: errorLog });
+	        if (errorLog.length != 0) {
+	            return;
+	        }
+
+	        var netClass = (0, _ipv.getClass)(address);
+
+	        var _getClassInfo = (0, _ip.getClassInfo)(netClass),
+	            range = _getClassInfo.range,
+	            prefix = _getClassInfo.prefix,
+	            subMask = _getClassInfo.subMask,
+	            blockSize = _getClassInfo.blockSize,
+	            subnets = _getClassInfo.subnets;
+
+	        this.setState({ netClass: netClass, netAddress: address, range: range, prefix: prefix, subMask: subMask, blockSize: blockSize, subnets: subnets, init: false });
+	    },
+	    normalRender: function normalRender() {
+	        var _this = this;
+
+	        var aproFeedback = function aproFeedback() {};
+	        if (this.state.errors.length != 0) {
+	            aproFeedback = function aproFeedback() {
+	                return _react2.default.createElement(
+	                    'div',
+	                    null,
+	                    _react2.default.createElement(
+	                        'p',
+	                        null,
+	                        'Please Resolve the following issues'
+	                    ),
+	                    _this.state.errors.map(function (error, index) {
+	                        return _react2.default.createElement(
+	                            'div',
+	                            { className: 'alert alert-danger', key: index },
+	                            error
+	                        );
+	                    })
+	                );
+	            };
+	        }
+	        return _react2.default.createElement(
+	            'div',
+	            { className: 'row' },
+	            _react2.default.createElement(
+	                'form',
+	                { className: 'form col-sm-4' },
+	                _react2.default.createElement(
+	                    'p',
+	                    { className: 'well well-info' },
+	                    'Classes are only applicable to IPv4 addresses'
+	                ),
+	                _react2.default.createElement(
+	                    'label',
+	                    { htmlFor: 'address' },
+	                    'IPv4 Address'
+	                ),
+	                _react2.default.createElement('input', { className: 'form-control', ref: 'address' }),
+	                _react2.default.createElement('hr', null),
+	                _react2.default.createElement(
+	                    'div',
+	                    { style: { marginTop: 4 + 'px' } },
+	                    _react2.default.createElement(
+	                        'button',
+	                        { className: 'btn btn-default', type: 'button', onClick: this.props.return },
+	                        _react2.default.createElement('span', { className: 'fa fa-undo' }),
+	                        ' Go back'
+	                    ),
+	                    _react2.default.createElement(
+	                        'button',
+	                        { className: 'btn btn-default pull-right', type: 'button', onClick: this.findClass },
+	                        'Find Class'
+	                    )
+	                )
+	            ),
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'col-sm-4' },
+	                aproFeedback()
+	            )
+	        );
+	    },
+	    finalRender: function finalRender() {
+	        var _this2 = this;
+
+	        return _react2.default.createElement(
+	            'div',
+	            { className: 'row' },
+	            _react2.default.createElement(
+	                'div',
+	                { className: 'col-sm-7' },
+	                _react2.default.createElement(
+	                    'p',
+	                    { className: 'well well-sm' },
+	                    'The network address ',
+	                    this.state.address,
+	                    ' is in class ',
+	                    _react2.default.createElement(
+	                        'b',
+	                        null,
+	                        this.state.netClass
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    'table',
+	                    { className: 'table table-bordered' },
+	                    _react2.default.createElement(
+	                        'caption',
+	                        null,
+	                        'Class Information'
+	                    ),
+	                    _react2.default.createElement(
+	                        'thead',
+	                        null,
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'th',
+	                                null,
+	                                'Param'
+	                            ),
+	                            _react2.default.createElement(
+	                                'th',
+	                                null,
+	                                'Value'
+	                            )
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        'tbody',
+	                        null,
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Class'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.netClass
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Subnets'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.subnets
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Range'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.range
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Prefix'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.prefix
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Subnet mask'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.subMask
+	                            )
+	                        ),
+	                        _react2.default.createElement(
+	                            'tr',
+	                            null,
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                'Subnet block-size'
+	                            ),
+	                            _react2.default.createElement(
+	                                'td',
+	                                null,
+	                                this.state.blockSize
+	                            )
+	                        )
+	                    )
+	                ),
+	                _react2.default.createElement(
+	                    'button',
+	                    { className: 'btn btn-default', type: 'button',
+	                        onClick: function onClick() {
+	                            _this2.setState({ init: true, netClass: '', netAddress: '', range: '', prefix: '', subMask: '', blockSize: '', subnet: '' });
+	                        } },
+	                    _react2.default.createElement('span', { className: 'fa fa-undo' }),
+	                    ' reset'
+	                )
+	            )
+	        );
+	    },
+	    render: function render() {
+	        return _react2.default.createElement(
+	            'div',
+	            null,
+	            this.state.init ? this.normalRender() : this.finalRender()
+	        );
+	    }
+	});
+
+	exports.default = FindClassTab;
+
+/***/ },
+/* 181 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -23803,108 +24275,659 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-	var MiscTab = _react2.default.createClass({
-	    displayName: "MiscTab",
-
+	var SpecialAddTab = _react2.default.createClass({
+	    displayName: "SpecialAddTab",
 	    render: function render() {
 	        return _react2.default.createElement(
 	            "div",
-	            { className: "col-lg-12" },
+	            { className: "row" },
 	            _react2.default.createElement(
 	                "div",
-	                { className: "Header" },
+	                { className: "col-sm-8" },
 	                _react2.default.createElement(
-	                    "h3",
-	                    { className: "head" },
-	                    "Misc"
-	                )
-	            ),
-	            _react2.default.createElement("hr", null),
-	            _react2.default.createElement(
-	                "div",
-	                { className: "col-sm-3" },
+	                    "form",
+	                    { className: "form-inline" },
+	                    _react2.default.createElement("input", { style: { borderRadius: 0 + 'px' }, className: "form-control", placeholder: "Find address" })
+	                ),
 	                _react2.default.createElement(
-	                    "h3",
-	                    null,
-	                    "Tools"
+	                    "table",
+	                    { className: "table table-bordered" },
+	                    _react2.default.createElement(
+	                        "caption",
+	                        null,
+	                        "Special Addresses as retrieveed from IANA.org"
+	                    ),
+	                    _react2.default.createElement(
+	                        "thead",
+	                        null,
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Block"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Name"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "RFC"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Source"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Destination"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Forwardable"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Global"
+	                            )
+	                        )
+	                    )
 	                ),
 	                _react2.default.createElement("hr", null),
 	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "Find Network"
-	                ),
-	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "Find Class"
-	                ),
-	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "Convert"
-	                ),
-	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "Translate"
-	                ),
-	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "EUI-64"
+	                    "div",
+	                    { style: { marginTop: 4 + 'px' } },
+	                    _react2.default.createElement(
+	                        "button",
+	                        { className: "btn btn-default", type: "button", onClick: this.props.return },
+	                        _react2.default.createElement("span", { className: "fa fa-undo" }),
+	                        " Go back"
+	                    )
 	                )
 	            ),
 	            _react2.default.createElement(
 	                "div",
-	                { className: "col-sm-3" },
+	                { className: "col-sm-4" },
 	                _react2.default.createElement(
-	                    "h3",
+	                    "h5",
 	                    null,
-	                    "Information"
+	                    "Notes"
+	                ),
+	                _react2.default.createElement("hr", null),
+	                _react2.default.createElement("p", { className: "well well-sm" })
+	            )
+	        );
+	    }
+	});
+
+	exports.default = SpecialAddTab;
+
+/***/ },
+/* 182 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var ProtocolsTab = _react2.default.createClass({
+	    displayName: "ProtocolsTab",
+	    render: function render() {
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "row" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-8" },
+	                _react2.default.createElement(
+	                    "form",
+	                    { className: "form-inline" },
+	                    _react2.default.createElement("input", { style: { borderRadius: 0 + 'px' }, className: "form-control", placeholder: "search for a protocol" })
+	                ),
+	                _react2.default.createElement(
+	                    "table",
+	                    { className: "table table-bordered" },
+	                    _react2.default.createElement(
+	                        "caption",
+	                        null,
+	                        "Protocols and Ports as retrieveed from ",
+	                        _react2.default.createElement(
+	                            "a",
+	                            null,
+	                            "IANA.org"
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        "thead",
+	                        null,
+	                        _react2.default.createElement(
+	                            "tr",
+	                            null,
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Name"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Protocol"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Port #"
+	                            ),
+	                            _react2.default.createElement(
+	                                "th",
+	                                null,
+	                                "Description"
+	                            )
+	                        )
+	                    )
 	                ),
 	                _react2.default.createElement("hr", null),
 	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "Classes"
-	                ),
+	                    "div",
+	                    { style: { marginTop: 4 + 'px' } },
+	                    _react2.default.createElement(
+	                        "button",
+	                        { className: "btn btn-default", type: "button", onClick: this.props.return },
+	                        _react2.default.createElement("span", { className: "fa fa-undo" }),
+	                        " Go back"
+	                    )
+	                )
+	            ),
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-4" },
 	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "Protocols"
+	                    "h5",
+	                    null,
+	                    "Notes"
 	                ),
+	                _react2.default.createElement("hr", null),
+	                _react2.default.createElement("p", { className: "well well-sm" })
+	            )
+	        );
+	    }
+	});
+
+	exports.default = ProtocolsTab;
+
+/***/ },
+/* 183 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _ip = __webpack_require__(173);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var ClassesTab = _react2.default.createClass({
+	    displayName: "ClassesTab",
+	    getInitialState: function getInitialState() {
+	        return { classInfo: [{ netClass: 'A' }, { netClass: 'B' }, { netClass: 'C' }, { netClass: 'D' }, { netClass: 'E' }] };
+	    },
+	    componentDidMount: function componentDidMount() {
+	        var classInfo = this.state.classInfo;
+	        var _iteratorNormalCompletion = true;
+	        var _didIteratorError = false;
+	        var _iteratorError = undefined;
+
+	        try {
+	            for (var _iterator = classInfo[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	                var ipClass = _step.value;
+
+	                console.log(ipClass);
+
+	                var _getClassInfo = (0, _ip.getClassInfo)(ipClass.netClass),
+	                    range = _getClassInfo.range,
+	                    prefix = _getClassInfo.prefix,
+	                    subMask = _getClassInfo.subMask,
+	                    blockSize = _getClassInfo.blockSize,
+	                    subnets = _getClassInfo.subnets;
+
+	                ipClass.range = range;
+	                ipClass.prefix = prefix;
+	                ipClass.subMask = subMask;
+	                ipClass.blockSize = blockSize;
+	                ipClass.subnets = subnets;
+	            }
+	        } catch (err) {
+	            _didIteratorError = true;
+	            _iteratorError = err;
+	        } finally {
+	            try {
+	                if (!_iteratorNormalCompletion && _iterator.return) {
+	                    _iterator.return();
+	                }
+	            } finally {
+	                if (_didIteratorError) {
+	                    throw _iteratorError;
+	                }
+	            }
+	        }
+
+	        console.log(classInfo);
+	        this.setState({ classInfo: classInfo });
+	    },
+	    render: function render() {
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "row" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-12" },
+	                this.state.classInfo.map(function (classInfo, index) {
+	                    return _react2.default.createElement(
+	                        "div",
+	                        { className: "col-sm-4", key: index },
+	                        _react2.default.createElement(
+	                            "table",
+	                            { className: "table table-bordered" },
+	                            _react2.default.createElement(
+	                                "caption",
+	                                null,
+	                                "Class ",
+	                                classInfo.netClass,
+	                                " Information"
+	                            ),
+	                            _react2.default.createElement(
+	                                "thead",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "th",
+	                                        null,
+	                                        "Param"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "th",
+	                                        null,
+	                                        "Value"
+	                                    )
+	                                )
+	                            ),
+	                            _react2.default.createElement(
+	                                "tbody",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "Subnets"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        classInfo.subnets
+	                                    )
+	                                ),
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "Range"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        classInfo.range
+	                                    )
+	                                ),
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "Prefix"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        classInfo.prefix
+	                                    )
+	                                ),
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "Subnet mask"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        classInfo.subMask
+	                                    )
+	                                ),
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "Subnet block-size"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        classInfo.blockSize
+	                                    )
+	                                )
+	                            )
+	                        )
+	                    );
+	                })
+	            ),
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-12" },
+	                _react2.default.createElement("hr", null),
 	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "Ports"
-	                ),
-	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "Standard Organisations"
-	                ),
-	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "IP Versions"
-	                ),
-	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "Special addresses"
-	                ),
-	                _react2.default.createElement(
-	                    "button",
-	                    { className: "btn btn-default btn-block" },
-	                    "Guidelines"
+	                    "div",
+	                    { style: { marginTop: 4 + 'px' } },
+	                    _react2.default.createElement(
+	                        "button",
+	                        { className: "btn btn-default", type: "button", onClick: this.props.return },
+	                        _react2.default.createElement("span", { className: "fa fa-undo" }),
+	                        " Go back"
+	                    )
 	                )
 	            )
 	        );
 	    }
 	});
 
-	exports.default = MiscTab;
+	exports.default = ClassesTab;
+
+/***/ },
+/* 184 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	var _globals = __webpack_require__(174);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var IPVersionsTab = _react2.default.createClass({
+	    displayName: "IPVersionsTab",
+	    getInitialState: function getInitialState() {
+	        return { versions: _globals.VERSIONS };
+	    },
+	    render: function render() {
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "row" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-12" },
+	                this.state.versions.map(function (ipVersion, index) {
+	                    return _react2.default.createElement(
+	                        "div",
+	                        { className: "col-sm-5", key: index },
+	                        _react2.default.createElement(
+	                            "table",
+	                            { className: "table table-bordered" },
+	                            _react2.default.createElement(
+	                                "caption",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "b",
+	                                    null,
+	                                    "IPv",
+	                                    ipVersion.version
+	                                )
+	                            ),
+	                            _react2.default.createElement(
+	                                "thead",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "th",
+	                                        null,
+	                                        "Param"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "th",
+	                                        null,
+	                                        "Value"
+	                                    )
+	                                )
+	                            ),
+	                            _react2.default.createElement(
+	                                "tbody",
+	                                null,
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "Bits"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        ipVersion.bits
+	                                    )
+	                                ),
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "Total Addresses"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        ipVersion.total_space
+	                                    )
+	                                ),
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "Format"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        ipVersion.format
+	                                    )
+	                                ),
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "Implemented"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        ipVersion.implemented
+	                                    )
+	                                ),
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "RFC"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        ipVersion.rfc
+	                                    )
+	                                ),
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        "Security"
+	                                    ),
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        null,
+	                                        ipVersion.security
+	                                    )
+	                                ),
+	                                _react2.default.createElement(
+	                                    "tr",
+	                                    null,
+	                                    _react2.default.createElement(
+	                                        "td",
+	                                        { colSpan: "2" },
+	                                        ipVersion.description
+	                                    )
+	                                )
+	                            )
+	                        )
+	                    );
+	                })
+	            ),
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-12" },
+	                _react2.default.createElement("hr", null),
+	                _react2.default.createElement(
+	                    "div",
+	                    { style: { marginTop: 4 + 'px' } },
+	                    _react2.default.createElement(
+	                        "button",
+	                        { className: "btn btn-default", type: "button", onClick: this.props.return },
+	                        _react2.default.createElement("span", { className: "fa fa-undo" }),
+	                        " Go back"
+	                    )
+	                )
+	            )
+	        );
+	    }
+	});
+
+	exports.default = IPVersionsTab;
+
+/***/ },
+/* 185 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+
+	var _react = __webpack_require__(1);
+
+	var _react2 = _interopRequireDefault(_react);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	var guideLines = ["Find the largest segment in the area - the area with the largest number of devices ", "Find the appropriate subnet mask for the largest segment", "Write down your subnet numbers to fit your subnet mask", "For your smaller segments,take one of the newly created subnets and apply a different more appropriate subnet mask to it", "Write down your newly subnetted subnets", "For even smaller segments go back to step 4"];
+
+	var GuidelinesTab = _react2.default.createClass({
+	    displayName: "GuidelinesTab",
+	    getInitialState: function getInitialState() {
+	        return { guidelines: guideLines };
+	    },
+	    render: function render() {
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "row" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "col-sm-5" },
+	                _react2.default.createElement(
+	                    "p",
+	                    { className: "well well-sm" },
+	                    "An overview of the guidelines this app uses to perfom Variable length subnet Masking (VLSM)"
+	                ),
+	                this.state.guidelines.map(function (step, index) {
+	                    return _react2.default.createElement(
+	                        "div",
+	                        { key: index },
+	                        "[ Step ",
+	                        index + 1,
+	                        "] :",
+	                        _react2.default.createElement("br", null),
+	                        " ",
+	                        step,
+	                        _react2.default.createElement("br", null),
+	                        _react2.default.createElement("br", null)
+	                    );
+	                }),
+	                _react2.default.createElement("hr", null),
+	                _react2.default.createElement(
+	                    "div",
+	                    { style: { marginTop: 4 + 'px' } },
+	                    _react2.default.createElement(
+	                        "button",
+	                        { className: "btn btn-default", type: "button", onClick: this.props.return },
+	                        _react2.default.createElement("span", { className: "fa fa-undo" }),
+	                        " Go back"
+	                    )
+	                )
+	            )
+	        );
+	    }
+	});
+
+	exports.default = GuidelinesTab;
 
 /***/ }
 /******/ ]);

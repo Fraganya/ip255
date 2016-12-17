@@ -1,0 +1,37 @@
+{
+    "A":{
+        "MSB":"00",
+        "networks":128,
+        "endDevices":16777216,
+        "status":"used",
+        "usage":"Large networks"
+
+    },
+    "B":{
+        "MSB":"10",
+        "networks":16384,
+        "endDevices":65536,
+        "status":"used",
+        "usage":"middle range networks"
+    },
+    "C":{
+        "MSB":"110",
+        "networks":2097152,
+        "endDevices":254,
+        "status":"used",
+        "usage":"smal networks"
+    },
+    "D":{
+        "MSB":"1111",
+        "networks":"unset",
+        "endDevices":"unset",
+        "status":"reserved",
+        "usage":"multicast"
+    },
+    "E":{
+        "MSB":"111",
+        "networks":"unset",
+        "endDevices":"unset",
+        "status":"reserved"
+    }
+}

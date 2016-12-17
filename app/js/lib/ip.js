@@ -309,6 +309,47 @@ export function aggregate(subnets,workFile){
     workFile.push(`Summarized network is ${aggregatedNet.address}/${prefix}`);
     return ({aggregatedNet})
 }
+export function getClassInfo(netClass){
+    let subnets,prefix,range,subMask,blockSize;
+
+    if(netClass=='A'){
+        subnets=subnetCount(7);
+        prefix='/8';
+        subMask="255.0.0.0";
+        range='0.0.0.0-127.0.0.0';
+        blockSize=hostCount(24)+2;
+    }
+    else if(netClass=='B'){
+        subnets=subnetCount(14);
+        prefix='/16';
+        subMask="255.255.0.0";
+        range='128.0.0.0-191.0.0.0';
+        blockSize=hostCount(16)+2;
+    }
+    else if(netClass=='C'){
+        subnets=subnetCount(21);
+        prefix='/24';
+        subMask="255.255.255.0";
+        range='192.0.0.0-223.0.0.0';
+        blockSize=hostCount(8)+2;
+    }
+    else if(netClass=='D'){
+        subnets='---'
+        prefix='/24';
+        subMask="255.255.255.0";
+        range='224.0.0.0-239.0.0.0';
+        blockSize="---";
+    }
+    else if(netClass=='E'){
+        subnets='---';
+        prefix='/24';
+        range='240.0.0.0-255.0.0.0';
+        subMask="255.255.255.0";
+        blockSize="---";
+    }
+
+    return {range,prefix,subMask,blockSize,subnets}
+}
 /**
  * for debugging 
  */
