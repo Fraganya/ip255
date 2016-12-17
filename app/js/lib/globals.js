@@ -35,10 +35,10 @@ export const VERSIONS=[
     {
         version:4,
         bits:32,
-        total_space:'3.4 Billion (Theoritical)',
-        format:'Decimal',
+        total_space:'4.3 Billion (Theoritical)',
+        notation:'Dotted Decimal',
         implemented:"---",
-        rfc:'---',
+        rfc:'791',
         description:"32 bit binary number represented as 4 octets used by the internet protocol layer (OSI layer 3) for delivering packets to end devices",
         security:"N/A"
     },
@@ -46,10 +46,10 @@ export const VERSIONS=[
         version:6,
         bits:128,
         total_space:'340 Undecillion',
-        format:'Hexadecimal',
+        notation:'Hexadecimal ',
         implemented:"---",
-        rfc:'---',
-        description:"128 bit binary number represented as 8 octets used by the internet protocol layer (OSI layer 3) for delivering packets to end devices",
+        rfc:'2460',
+        description:"128 bit binary number represented in hexadecimal used by the internet protocol layer (OSI layer 3) for delivering packets to end devices",
         security:"MD5"
     }
 ];

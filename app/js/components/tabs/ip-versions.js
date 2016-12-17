@@ -32,8 +32,8 @@ let IPVersionsTab=React.createClass({
                                     <td>{ipVersion.total_space}</td>               
                                 </tr>  
                                 <tr>          
-                                    <td>Format</td>  
-                                    <td>{ipVersion.format}</td>               
+                                    <td>Notation</td>  
+                                    <td>{ipVersion.notation}</td>               
                                 </tr> 
                                 <tr>          
                                     <td>Implemented</td>  

@@ -310,7 +310,7 @@ export function aggregate(subnets,workFile){
     return ({aggregatedNet})
 }
 export function getClassInfo(netClass){
-    let subnets,prefix,range,subMask,blockSize;
+    let subnets,prefix,range,subMask,blockSize,rfc;
 
     if(netClass=='A'){
         subnets=subnetCount(7);
@@ -318,6 +318,7 @@ export function getClassInfo(netClass){
         subMask="255.0.0.0";
         range='0.0.0.0-127.0.0.0';
         blockSize=hostCount(24)+2;
+        rfc:"---"
     }
     else if(netClass=='B'){
         subnets=subnetCount(14);
@@ -325,6 +326,7 @@ export function getClassInfo(netClass){
         subMask="255.255.0.0";
         range='128.0.0.0-191.0.0.0';
         blockSize=hostCount(16)+2;
+        rfc:"---"
     }
     else if(netClass=='C'){
         subnets=subnetCount(21);
@@ -332,20 +334,23 @@ export function getClassInfo(netClass){
         subMask="255.255.255.0";
         range='192.0.0.0-223.0.0.0';
         blockSize=hostCount(8)+2;
+        rfc:"---"
     }
     else if(netClass=='D'){
         subnets='---'
-        prefix='/24';
+        prefix='/4';
         subMask="255.255.255.0";
         range='224.0.0.0-239.0.0.0';
         blockSize="---";
+        rfc:"5771"
     }
     else if(netClass=='E'){
         subnets='---';
-        prefix='/24';
+        prefix='/4';
         range='240.0.0.0-255.0.0.0';
         subMask="255.255.255.0";
         blockSize="---";
+        rfc:"1700"
     }
 
     return {range,prefix,subMask,blockSize,subnets}

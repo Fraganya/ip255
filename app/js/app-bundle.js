@@ -22460,7 +22460,8 @@
 	        prefix = void 0,
 	        range = void 0,
 	        subMask = void 0,
-	        blockSize = void 0;
+	        blockSize = void 0,
+	        rfc = void 0;
 
 	    if (netClass == 'A') {
 	        subnets = subnetCount(7);
@@ -22468,30 +22469,35 @@
 	        subMask = "255.0.0.0";
 	        range = '0.0.0.0-127.0.0.0';
 	        blockSize = hostCount(24) + 2;
+	        rfc: "---";
 	    } else if (netClass == 'B') {
 	        subnets = subnetCount(14);
 	        prefix = '/16';
 	        subMask = "255.255.0.0";
 	        range = '128.0.0.0-191.0.0.0';
 	        blockSize = hostCount(16) + 2;
+	        rfc: "---";
 	    } else if (netClass == 'C') {
 	        subnets = subnetCount(21);
 	        prefix = '/24';
 	        subMask = "255.255.255.0";
 	        range = '192.0.0.0-223.0.0.0';
 	        blockSize = hostCount(8) + 2;
+	        rfc: "---";
 	    } else if (netClass == 'D') {
 	        subnets = '---';
-	        prefix = '/24';
+	        prefix = '/4';
 	        subMask = "255.255.255.0";
 	        range = '224.0.0.0-239.0.0.0';
 	        blockSize = "---";
+	        rfc: "5771";
 	    } else if (netClass == 'E') {
 	        subnets = '---';
-	        prefix = '/24';
+	        prefix = '/4';
 	        range = '240.0.0.0-255.0.0.0';
 	        subMask = "255.255.255.0";
 	        blockSize = "---";
+	        rfc: "1700";
 	    }
 
 	    return { range: range, prefix: prefix, subMask: subMask, blockSize: blockSize, subnets: subnets };
@@ -22542,20 +22548,20 @@
 	var VERSIONS = exports.VERSIONS = [{
 	  version: 4,
 	  bits: 32,
-	  total_space: '3.4 Billion (Theoritical)',
-	  format: 'Decimal',
+	  total_space: '4.3 Billion (Theoritical)',
+	  notation: 'Dotted Decimal',
 	  implemented: "---",
-	  rfc: '---',
+	  rfc: '791',
 	  description: "32 bit binary number represented as 4 octets used by the internet protocol layer (OSI layer 3) for delivering packets to end devices",
 	  security: "N/A"
 	}, {
 	  version: 6,
 	  bits: 128,
 	  total_space: '340 Undecillion',
-	  format: 'Hexadecimal',
+	  notation: 'Hexadecimal ',
 	  implemented: "---",
-	  rfc: '---',
-	  description: "128 bit binary number represented as 8 octets used by the internet protocol layer (OSI layer 3) for delivering packets to end devices",
+	  rfc: '2460',
+	  description: "128 bit binary number represented in hexadecimal used by the internet protocol layer (OSI layer 3) for delivering packets to end devices",
 	  security: "MD5"
 	}];
 
@@ -24777,12 +24783,12 @@
 	                                    _react2.default.createElement(
 	                                        "td",
 	                                        null,
-	                                        "Format"
+	                                        "Notation"
 	                                    ),
 	                                    _react2.default.createElement(
 	                                        "td",
 	                                        null,
-	                                        ipVersion.format
+	                                        ipVersion.notation
 	                                    )
 	                                ),
 	                                _react2.default.createElement(

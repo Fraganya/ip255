@@ -1,18 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<?xml-stylesheet type="text/xsl" href="iana-ipv4-special-registry.xsl"?>
-<?oxygen RNGSchema="iana-ipv4-special-registry.rng" type="xml"?>
-<registry xmlns="http://www.iana.org/assignments" id="iana-ipv4-special-registry">
-  <title>IANA IPv4 Special-Purpose Address Registry</title>
-  <category>Internet Protocol version 4 (IPv4) Address Space</category>
-  <created>2009-08-19</created>
-  <updated>2016-11-14</updated>
-  
-    
-  
-  <registry id="iana-ipv4-special-registry-1">
-    <title>IANA IPv4 Special-Purpose Address Registry</title>
-    <xref type="rfc" data="rfc5736"/><xref type="rfc" data="rfc6890"/>
-    <registration_rule>IETF Review</registration_rule>
+<data>
     <note>The IETF has reserved the address block of 192.0.0.0/24 for use for
 special purposes relating to protocol assignments. This registry
 contains the current assignments made by the IETF from this address
@@ -68,7 +55,7 @@ The IPv4 and IPv6 Special-Purpose Address Registries maintain the
    If the value of "Destination" is FALSE, the values of "Forwardable"
    and "Global" must also be false.
     </note>
-    
+    <records>
      <record>
       <address>0.0.0.0/8</address>
        <name>"This host on this network"</name>
@@ -333,12 +320,5 @@ The IPv4 and IPv6 Special-Purpose Address Registries maintain the
       <global>False</global>
       <reserved>False</reserved>
     </record>
-
-  </registry>
-  
-  <footnote anchor="1">Several protocols have been granted exceptions to this rule. 
-For examples, see <xref type="draft" data="RFC-ietf-mpls-rfc4379bis-09"/> and <xref type="rfc" data="rfc5884"/>.</footnote> 
-  <footnote anchor="2">Not useable unless by virtue of a more specific reservation.</footnote>
-  
-  <people/>
-</registry>
+</records>
+</data>
