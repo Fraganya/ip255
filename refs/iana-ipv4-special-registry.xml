@@ -58,178 +58,147 @@ The IPv4 and IPv6 Special-Purpose Address Registries maintain the
     <records>
      <record>
       <address>0.0.0.0/8</address>
-       <name>"This host on this network"</name>
-      <spec><xref type="rfc" data="rfc1122"/>, section 3.2.1.3</spec>
-      <allocation>1981-09</allocation>
+      <name>"This host on this network"</name>
+      <rfc>1122</rfc>
       <source>True</source>
       <destination>False</destination>
       <forwardable>False</forwardable>
       <global>False</global>
-      <reserved>True</reserved>
     </record>
     
     <record>
       <address>10.0.0.0/8</address>
       <name>Private-Use</name>
-      <spec><xref type="rfc" data="rfc1918"/></spec>
-      <allocation>1996-02</allocation>
+      <rfc>1918</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>True</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>    
     
     <record>
       <address>100.64.0.0/10</address>
       <name>Shared Address Space</name>
-      <spec><xref type="rfc" data="rfc6598"/></spec>
-      <allocation>2012-04</allocation>
+      <rfc>6598</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>True</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>
 
     <record>
       <address>127.0.0.0/8</address>
       <name>Loopback</name>
-      <spec><xref type="rfc" data="rfc1122"/>, section 3.2.1.3</spec>
-      <allocation>1981-09</allocation>
-      <source>False<xref type="note" data="1"/></source>
-      <destination>False<xref type="note" data="1"/></destination>
-      <forwardable>False<xref type="note" data="1"/></forwardable>
-      <global>False<xref type="note" data="1"/></global>
-      <reserved>True</reserved>
+      <rfc>1122</rfc>
+      <source>False></source>
+      <destination>False</destination>
+      <forwardable>False</forwardable>
     </record>    
     
     <record>
       <address>169.254.0.0/16</address>
       <name>Link Local</name>
-      <spec><xref type="rfc" data="rfc3927"/></spec>
-      <allocation>2005-05</allocation>
+      <rfc>3927</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>False</forwardable>
       <global>False</global>
-      <reserved>True</reserved>
     </record>    
     
     <record>
       <address>172.16.0.0/12</address>
       <name>Private-Use</name>
-      <spec><xref type="rfc" data="rfc1918"/></spec>
-      <allocation>1996-02</allocation>
+      <rfc>1918</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>True</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>
 
     <record>
-      <address>192.0.0.0/24<xref type="note" data="2"/></address>
+      <address>192.0.0.0/24</address>
       <name>IETF Protocol Assignments</name>
-      <spec><xref type="rfc" data="rfc6890"/>, section 2.1</spec>
-      <allocation>2010-01</allocation>
+      <rfc>6890</rfc>
       <source>False</source>
       <destination>False</destination>
       <forwardable>False</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>
 
     <record>
       <address>192.0.0.0/29</address>
       <name>IPv4 Service Continuity Prefix</name>
-      <spec><xref type="rfc" data="rfc7335"/></spec>
-      <allocation>2011-06</allocation>
+      <rfc>7335</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>True</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>
     
     <record>
       <address>192.0.0.8/32</address>
       <name>IPv4 dummy address</name>
-      <spec><xref type="rfc" data="rfc7600"/></spec>
-      <allocation>2015-03</allocation>
+      <rfc>7600</rfc>
       <source>True</source>
       <destination>False</destination>
       <forwardable>False</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>
     
     <record date="2015-10-23">
       <address>192.0.0.9/32</address>
       <name>Port Control Protocol Anycast</name>
-      <spec><xref type="rfc" data="rfc7723"/></spec>
-      <allocation>2015-10</allocation>
+      <rfc>7723</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>True</forwardable>
       <global>True</global>
-      <reserved>False</reserved>
     </record>
     
      <record>
       <address>192.0.0.170/32, 192.0.0.171/32</address>
       <name>NAT64/DNS64 Discovery</name>
-      <spec><xref type="rfc" data="rfc7050"/>, section 2.2</spec>
-      <allocation>2013-02</allocation>
+      <rfc>7050</rfc>
       <source>False</source>
       <destination>False</destination>
       <forwardable>False</forwardable>
       <global>False</global>
-      <reserved>True</reserved>
     </record>
     
     <record>
       <address>192.0.2.0/24</address>
       <name>Documentation (TEST-NET-1)</name>
-      <spec><xref type="rfc" data="rfc5737"/></spec>
-      <allocation>2010-01</allocation>
+      <rfc>5737</rfc>
       <source>False</source>
       <destination>False</destination>
       <forwardable>False</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record> 
     
     <record date="2014-12-17">
       <address>192.31.196.0/24</address>
       <name>AS112-v4</name>
-      <spec><xref type="rfc" data="rfc7535"/></spec>
-      <allocation>2014-12</allocation>
+      <rfc>7535</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>True</forwardable>
       <global>True</global>
-      <reserved>False</reserved>
     </record>
     
     <record date="2014-12-17">
       <address>192.52.193.0/24</address>
       <name>AMT</name>
-      <spec><xref type="rfc" data="rfc7450"/></spec>
-      <allocation>2014-12</allocation>
+      <rfc>7450</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>True</forwardable>
       <global>True</global>
-      <reserved>False</reserved>
     </record>
     
     <record updated="2015-03-15">
       <address>192.88.99.0/24</address>
       <name>Deprecated (6to4 Relay Anycast)</name>
-      <spec><xref type="rfc" data="rfc7526"/></spec>
-      <allocation>2001-06</allocation>
-      <termination>2015-03</termination>
+      <rfc>7526</rfc>
       <source/>
       <destination/>
       <forwardable/>
@@ -240,85 +209,71 @@ The IPv4 and IPv6 Special-Purpose Address Registries maintain the
     <record>
       <address>192.168.0.0/16</address>
       <name>Private-Use</name>
-      <spec><xref type="rfc" data="rfc1918"/></spec>
-      <allocation>1996-02</allocation>
+      <rfc>1918</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>True</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>    
     
     <record date="2015-03-17">
       <address>192.175.48.0/24</address>
       <name>Direct Delegation AS112 Service</name>
-      <spec><xref type="rfc" data="rfc7534"/></spec>
-      <allocation>1996-01</allocation>
+      <rfc>7534</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>True</forwardable>
       <global>True</global>
-      <reserved>False</reserved>
     </record>
     
     <record>
       <address>198.18.0.0/15</address>
       <name>Benchmarking</name>
-      <spec><xref type="rfc" data="rfc2544"/></spec>
-      <allocation>1999-03</allocation>
+      <rfc>2544</rfc>
       <source>True</source>
       <destination>True</destination>
       <forwardable>True</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>    
     
     <record>
       <address>198.51.100.0/24</address>
       <name>Documentation (TEST-NET-2)</name>
-      <spec><xref type="rfc" data="rfc5737"/></spec>
-      <allocation>2010-01</allocation>
+      <rfc>5737</rfc>
       <source>False</source>
       <destination>False</destination>
       <forwardable>False</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>    
     
     <record>
       <address>203.0.113.0/24</address>
       <name>Documentation (TEST-NET-3)</name>
-      <spec><xref type="rfc" data="rfc5737"/></spec>
-      <allocation>2010-01</allocation>
+      <rfc>5737</rfc>
       <source>False</source>
       <destination>False</destination>
       <forwardable>False</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>    
     
     <record>
       <address>240.0.0.0/4</address>
       <name>Reserved</name>
-      <spec><xref type="rfc" data="rfc1112"/>, section 4</spec>
-      <allocation>1989-08</allocation>
+      <rfc>1122</rfc>
       <source>False</source>
       <destination>False</destination>
       <forwardable>False</forwardable>
       <global>False</global>
-      <reserved>True</reserved>
     </record>    
     
     <record>
       <address>255.255.255.255/32</address>
       <name>Limited Broadcast</name>
-      <spec><xref type="rfc" data="rfc919"/>, section 7</spec>
-      <allocation>1984-10</allocation>
+      <rfc>919</rfc>
       <source>False</source>
       <destination>True</destination>
       <forwardable>False</forwardable>
       <global>False</global>
-      <reserved>False</reserved>
     </record>
 </records>
 </data>

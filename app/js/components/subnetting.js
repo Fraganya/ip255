@@ -1,5 +1,6 @@
 import React from "react";
-
+;
+/**ip lib imports */
 import {isValidAddress} from "../lib/ip.js";
 import {isValidBits} from "../lib/ip.js";
 import {isValidPrefix} from "../lib/ip.js";
@@ -8,6 +9,14 @@ import {getBitsByReqs} from "../lib/ip.js";
 import {max_hosts} from "../lib/ip.js";
 import {currentNetwork} from '../lib/ip.js';
 import {subnet} from '../lib/ip.js';
+
+import {binInt} from '../lib/ipv4.js';
+import {binOctet} from '../lib/ipv4.js';
+
+/**Electron imports */
+const {remote}=window.require("electron");
+const dialog=remote.dialog;
+const sql=window.require("sql.js");
 
 let SubnetField=React.createClass({
      handleChange:function(){
@@ -38,8 +47,8 @@ let SubnetField=React.createClass({
          return(
                 <div>
                 <p className="well well-sm">Successfully subnetted {master.state.curIP} /{master.state.origBits} by lending {master.state.bits} bits</p>
-                 <p className="well well-sm col-sm-3">{master.state.subnetCount} Networks<br /> {master.state.usable} Hosts/Subnet</p>
-                 <p className="well well-sm col-sm-5" style={{marginLeft:2+'px'}}>Prefix == /{master.state.prefix}<br />Subnet ==  {master.state.subMask}</p>
+                 <p className="well well-sm col-md-3 col-lg-3 col-sm-12">{master.state.subnetCount} Networks<br /> {master.state.usable} Hosts/Subnet</p>
+                 <p className="well well-sm col-md-5 col-lg-5 col-sm-12" style={{marginLeft:2+'px'}}>Prefix == /{master.state.prefix}<br />Subnet ==  {master.state.subMask}</p>
                  {/* summary infor */}
                  <table className="table table-bordered"> 
                     <caption>Network Information</caption> 
@@ -84,6 +93,7 @@ let SubnetField=React.createClass({
          )
      }
  })
+ 
  let SubnettingTab=React.createClass({
      getInitialState:function(){
          return {init:true,basic:true,reqSubnets:[{hosts:0,num:1}],subnetCount:1,useVLSM:false,errors:[]}
@@ -99,7 +109,6 @@ let SubnetField=React.createClass({
          isValidAddress(address,ipType,errorLog);
          isValidPrefix(subPrefix,ipType,errorLog);
          isValidBits(bitsToLend,subPrefix,ipType,errorLog);
-         console.log(errorLog);
          this.setState({errors:errorLog})
          if(errorLog.length!=0){
              return false;
@@ -153,6 +162,65 @@ let SubnetField=React.createClass({
             validate_subReq(subnetHostReqs[index].hosts,"Invalid requirenments for subnet :"+subnetHostReqs[index].num,errorLog)
         }
      },
+     saveSchema:function(){
+         const sql=window.require("sql.js");
+         let proceed=dialog.showMessageBox({title:"Proceed",type:"warning",buttons:["Yes","Cancel"],message:"Saving larger subnets as schemas may take longer causing your application to freeze or even fail.Are you sure you want to continue?",});
+         if(proceed==0){
+            dialog.showSaveDialog({title:"Save Schema As",defaultPath:"schemas"},(filename)=>{
+                if(!filename) return ;
+
+                let schemaDB=new sql.Database();
+
+                //get data
+                let subnets=this.state.subnets;
+                let subCount=this.state.subnetCount;
+                let newPrefix=this.state.newPrefix;
+                let orig_net=this.state.curIP;
+                let origBits=this.state.origBits;
+                let subHosts=this.state.usable;
+
+                //prep data 
+                let query=`CREATE TABLE net_info(parent_net string PRIMARY KEY,init_prefix varchar(4) NOT NULL,subnet_count int NOT NULL,sub_host int NOT NULL);`;
+                query+=`INSERT INTO net_info VALUES('${orig_net}','${origBits}',${subCount},${subHosts})`;
+                if(schemaDB.run(query)){
+                    //prep 
+                    let curAdd;
+                    const fs =window.require('electron').remote.require('fs');
+                    try{
+                        for(let sub=0;sub<subnets.length;sub++)
+                        {
+                            query=`CREATE TABLE subnet_${sub}(address string PRIMARY KEY,assigned bool default FALSE NOT NULL,device string,description string);`;
+                            for(let host=1;host<=subHosts;host++)
+                            {
+                                curAdd=binOctet((binInt(subnets[sub].NA)+host)>>>0);
+                                query+=`INSERT INTO subnet_${sub} VALUES('${curAdd}','FALSE','--','--');`;
+
+                            }
+                            schemaDB.run(query);
+                        }
+                        let data=schemaDB.export();
+                        let DB_Buffer=new Buffer(data);
+                        fs.writeFile(`${filename}.db`,DB_Buffer,(err)=>{
+                            if(err){
+                                    dialog.showErrorBox("Save Error",`${err.toString()}`);
+                                    return;
+                            }
+                            dialog.showMessageBox({type:"info",message:"The schema has been saved successfully!",buttons:['Ok']});
+                        })
+                    }
+                    catch(err){
+                        dialog.showErrorBox("Schema generation error",err.toString())
+                    }
+                
+                // console.log(filename);
+
+                    }
+                
+            })
+         }
+    
+
+     },
      modeChange:function(){
          let mode=this.refs.mode.value;
          if(mode==="basic"){
@@ -167,7 +235,7 @@ let SubnetField=React.createClass({
          let subNum=this.refs.subBox.value;
          if(subNum>this.state.subnetCount || subNum==0 || subNum<0)
          {
-             alert("Oout of bound ");
+             dialog.showErrorBox("Seek Error",`There is no subnet with that ID`);
              return;
          }
 
@@ -207,7 +275,8 @@ let SubnetField=React.createClass({
          reqSubnets[key].hosts=val;
          this.setState({reqSubnets:reqSubnets});
      },
-    remove:function(key){
+    remove:function(key)
+    {
          let reqSubnets=this.state.reqSubnets;
           let errorLog=[];
          if(reqSubnets.length==1){
@@ -223,159 +292,162 @@ let SubnetField=React.createClass({
          reqSubnets.splice(key,1);
          this.setState({reqSubnets,errors:[]});
      },
-     normalRender:function(){
-         let aproParams=undefined;
-         let aproFeedback=function(){};
-         let aproSubnet=undefined;
-         if(this.state.basic){
-             aproParams=()=>{
-                return(
-                     <div>
-                     <label htmlFor="bits-to-borrow">Bits to borrow</label>
-                     <input className="form-control" ref="bitsToLend"/>
-                     </div>
-                 )
-             }
-             aproSubnet=this.subnetBasic;
-         }
-         else if(!this.state.basic && !this.state.useVLSM){
-             aproParams=()=>{
-                 return(
-                     <div>
-                     <label htmlFor="Host-requirenments">Host Requirenments</label>
-                     <input className="form-control"  ref="hostReqs"/>
-                      <label htmlFor="subnet-requirenments">Subnet Requirenments</label>
-                     <input className="form-control" ref="subReqs"/>
-                     <div className="checkbox"> <label><input type="checkbox" onChange={this.useVLSM} checked={this.state.useVLSM}/>use VLSM</label></div> 
-                     </div>
-                 )
-             }
-              aproSubnet=this.subnetAdvanced;
-         }
-         else{
-             aproParams=()=>{
-                 return(
-                     <div>
-                     {this.state.reqSubnets.map(function(subnet,index){
-                         return(
-                             <SubnetField ref={'vlsmSub_'+subnet.num} remove={this.remove} key={index} updater={this.updateSubnet} num={subnet.num} hosts={subnet.hosts} />
-                         )}.bind(this))
-                     }
-                    <div className="row">
-                       <div className="checkbox col-sm-6"> <label><input type="checkbox" onChange={this.useVLSM} checked={this.state.useVLSM} />use VLSM</label></div> 
-                        <div style={{marginTop:4+'px'}} className="col-sm-6">
-                        <button className="btn btn-default pull-right" type="button" onClick={this.addSubnet}>
-                            <span className="glyphicon glyphicon-plus-sign"/> Subnet
-                        </button>
-                        </div>
-                    </div>
-                    </div>
-                 )
-             }
-              aproSubnet=this.subnetWithVLSM;
-         }
-
-         //prep error log
-         if(this.state.errors.length!=0){
-             aproFeedback=()=>{
-                 return(
+    normalRender:function(){
+        let aproParams=undefined;
+        let aproFeedback=function(){};
+        let aproSubnet=undefined;
+        if(this.state.basic){
+            aproParams=()=>{
+            return(
                     <div>
-                    <p>Please Resolve the following issues</p>
-                    {
-                        this.state.errors.map((error,index)=>{
-                           return <div className="alert alert-danger" key={index}>{error}</div>
-                         })
-                    }
+                    <label htmlFor="bits-to-borrow">Bits to borrow</label>
+                    <input className="form-control" ref="bitsToLend"/>
                     </div>
-                 )
-             }
-         }
-         return(
-             <div className="row">
-               <div className="col-sm-2 ">
-                <form>
-                <label htmlFor="mode">Mode</label>
-                <select className="form-control" ref="mode" onChange={this.modeChange}>
-                    <option value="basic">Basic</option>
-                    <option value="advanced">Advanced</option>
-                </select>
-                </form>
-               </div>
-               <form className="form col-sm-4">
-                 <label className="">Type</label>
-                 <select className="form-control" ref="ipType">   
-                    <option value="4">IPv4</option>
-                    <option value="6">IPv6</option>
-                 </select> 
-                 <label htmlFor="address">Address</label>
-                 <input className="form-control" ref="address"/>
+                )
+            }
+            aproSubnet=this.subnetBasic;
+        }
+        else if(!this.state.basic && !this.state.useVLSM){
+            aproParams=()=>{
+                return(
+                    <div>
+                    <label htmlFor="Host-requirenments">Host Requirenments</label>
+                    <input className="form-control"  ref="hostReqs"/>
+                    <label htmlFor="subnet-requirenments">Subnet Requirenments</label>
+                    <input className="form-control" ref="subReqs"/>
+                    <div className="checkbox"> <label><input type="checkbox" onChange={this.useVLSM} checked={this.state.useVLSM}/>use VLSM</label></div> 
+                    </div>
+                )
+            }
+            aproSubnet=this.subnetAdvanced;
+        }
+        else{
+            aproParams=()=>{
+                return(
+                    <div>
+                    {this.state.reqSubnets.map(function(subnet,index){
+                        return(
+                            <SubnetField ref={'vlsmSub_'+subnet.num} remove={this.remove} key={index} updater={this.updateSubnet} num={subnet.num} hosts={subnet.hosts} />
+                        )}.bind(this))
+                    }
+                <div className="row">
+                    <div className="checkbox col-sm-6"> <label><input type="checkbox" onChange={this.useVLSM} checked={this.state.useVLSM} />use VLSM</label></div> 
+                    <div style={{marginTop:4+'px'}} className="col-sm-6">
+                    <button className="btn btn-default pull-right" type="button" onClick={this.addSubnet}>
+                        <span className="glyphicon glyphicon-plus-sign"/> Subnet
+                    </button>
+                    </div>
+                </div>
+                </div>
+                )
+            }
+            aproSubnet=this.subnetWithVLSM;
+        }
 
-                 <label htmlFor="subnet">Subnet/Prefix</label>
-                 <input className="form-control" ref="subPrefix"/>
-
-                 { aproParams()}
-                 
-                 <hr />
-                 <div style={{marginTop:4+'px'}}>
-                 <button className="btn btn-default pull-right" type="button" onClick={aproSubnet}>Subnet</button>
-                 </div>
-               </form>
-               <div className="col-sm-4">
-                {aproFeedback()}
-               </div>
-             </div>
-         )
-     },
-     finalRender:function(){
-         return(
+        //prep error log
+        if(this.state.errors.length!=0){
+            aproFeedback=()=>{
+                return(
+                <div>
+                <p>Please Resolve the following issues</p>
+                {
+                    this.state.errors.map((error,index)=>{
+                        return <div className="alert alert-danger" key={index}>{error}</div>
+                        })
+                }
+                </div>
+                )
+            }
+        }
+        return(
             <div className="row">
-             <div className="col-sm-7">
-             <SubnettedView master={this}/>
-               <p>Network {this.state.curSub+1} of {this.state.subnetCount}</p>
-                    <div className="row">
-                     <form className="form-inline col-sm-5">
-                        <div className="form-group">
-                            <label className="sr-only" htmlFor="subnet number">Go to</label>
-                            <input className="form-control" ref="subBox" placeholder="go to subnet"/>
-                        </div>
-                        <button style={{marginLeft:1+'px',marginTop:2+'px',borderRadius:0+'px'}} type="button" onClick={this.setSub} className="btn btn-default">Go</button>
-                        <button style={{marginLeft:1+'px',marginTop:2+'px',borderRadius:0+'px'}} type="button" onClick={this.reset} className="btn btn-default">Reset</button>
+            <div className="col-sm-2 ">
+            <form>
+            <label htmlFor="mode">Mode</label>
+            <select className="form-control" ref="mode" onChange={this.modeChange}>
+                <option value="basic">Basic</option>
+                <option value="advanced">Advanced</option>
+            </select>
+            </form>
+            </div>
+            <form className="form col-sm-4">
+                <label className="">Type</label>
+                <select className="form-control" ref="ipType">   
+                <option value="4">IPv4</option>
+                <option value="6">IPv6</option>
+                </select> 
+                <label htmlFor="address">Address</label>
+                <input className="form-control" ref="address"/>
+
+                <label htmlFor="subnet">Subnet/Prefix</label>
+                <input className="form-control" ref="subPrefix"/>
+
+                { aproParams()}
+                
+                <hr />
+                <div style={{marginTop:4+'px'}}>
+                <button className="btn btn-default pull-right" type="button" onClick={aproSubnet}>Subnet</button>
+                </div>
+            </form>
+            <div className="col-sm-4">
+            {aproFeedback()}
+            </div>
+            </div>
+        )
+    },
+    finalRender:function(){
+        return(
+        <div className="row">
+            <div className="col-sm-7">
+            <SubnettedView master={this}/>
+            <p>Network {this.state.curSub+1} of {this.state.subnetCount}</p>
+                <div className="row">
+                    <form className="form-inline col-md-6 col-lg-5 col-sm-12">
+                    <div className="form-group">
+                        <label className="sr-only" htmlFor="subnet number">Go to</label>
+                        <input className="form-control" ref="subBox" placeholder="go to subnet"/>
+                    </div>
+                    <button style={{marginLeft:1+'px',marginTop:2+'px',marginBottom:2+'px',borderRadius:0+'px'}} type="button" onClick={this.setSub} className="btn btn-default">Go</button>
+                    <button style={{marginLeft:1+'px',marginTop:2+'px',marginBottom:2+'px',borderRadius:0+'px'}} type="button" onClick={this.reset} className="btn btn-default">Reset</button>
                     </form>
-                    <div className="btn-group col-sm-3">
+                    <div className="btn-group col-lg-6 col-md-6 col-sm-12" style={{marginBottom:2+'px'}}>
                         <button className="btn btn-default glyphicon glyphicon-chevron-left" type="button" onClick={this.subDown}
                         disabled={(this.state.curSub==0) ? true : false}/>
                         <button className="btn btn-default glyphicon glyphicon-chevron-right" type="button" onClick={this.subUp}
                         disabled={(this.state.curSub==(this.state.subnetCount-1)) ? true : false} />
+                        <button style={{marginLeft:1+'px',borderRadius:0+'px'}} type="button" className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.saveSchema}>
+                        Schema
+                        </button>
                     </div> 
-                    </div>
-                </div>{/**end of table view */}
-                <div className="col-sm-5">
-                    <pre>  
-                      <h5>Working console</h5>
-                      <hr/>
-                      {
-                          this.state.workFile.map(function(val,index){
-                              return(
-                                  <p key={index}>{val}</p>
-                              )
-                          })
-                      }
-                     </pre> 
                 </div>
+            </div>{/**end of table view */}
+            <div className="col-sm-5">
+                <pre>  
+                    <h5>Working console</h5>
+                    <hr/>
+                    {
+                        this.state.workFile.map(function(val,index){
+                            return(
+                                <p key={index}>{val}</p>
+                            )
+                        })
+                    }
+                    </pre> 
             </div>
-         )
-     },
-     render:function(){
-            return(
-             <div className="col-lg-12">
-                        <div className="Header">
-                             <h3 className="head">Subnetting</h3>
-                        </div>
-                        <hr/> 
-                        {(this.state.init) ? this.normalRender() : this.finalRender()}
-             </div>
-         )     
-     }
+        </div>
+        )
+    },
+    render:function(){
+        return(
+            <div className="col-lg-12">
+                    <div className="Header">
+                            <h3 className="head">Subnetting</h3>
+                    </div>
+                    <hr/> 
+                    {(this.state.init) ? this.normalRender() : this.finalRender()}
+            </div>
+        )     
+    }
  });
 
 export default SubnettingTab;

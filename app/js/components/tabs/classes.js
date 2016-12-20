@@ -15,8 +15,7 @@ let ClassesTab=React.createClass({
     componentDidMount() {
         let classInfo=this.state.classInfo;
         for(let ipClass of classInfo)
-        {
-            console.log(ipClass);            
+        {           
            let {range,prefix,subMask,blockSize,subnets}=getClassInfo(ipClass.netClass);
            ipClass.range=range;
            ipClass.prefix=prefix;
@@ -24,7 +23,6 @@ let ClassesTab=React.createClass({
            ipClass.blockSize=blockSize;
            ipClass.subnets=subnets;
         }
-        console.log(classInfo);
         this.setState({classInfo})
     },    
     render(){

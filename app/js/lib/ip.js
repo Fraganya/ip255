@@ -309,6 +309,11 @@ export function aggregate(subnets,workFile){
     workFile.push(`Summarized network is ${aggregatedNet.address}/${prefix}`);
     return ({aggregatedNet})
 }
+/**
+ * returns information about an ip class 
+ * @param {char}netClass - character representing the class 
+ * @return {object} - classinfo
+ */
 export function getClassInfo(netClass){
     let subnets,prefix,range,subMask,blockSize,rfc;
 
@@ -355,6 +360,26 @@ export function getClassInfo(netClass){
 
     return {range,prefix,subMask,blockSize,subnets}
 }
+/**
+ * converts an integer from one base to another
+ * @param {int} num-  interger to convert
+ * @param {int} curBase -current base
+ * @param {int} toBase -base to convert number to
+ * @return{int} converted integer
+ */
+export function convertBase(num,curBase,toBase)
+{
+    return (parseInt(num,curBase).toString(toBase));
+}
+
+
+
+
+/** Schema functions */
+export function toSchema(networks){
+    
+}
+
 /**
  * for debugging 
  */
