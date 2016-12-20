@@ -166,7 +166,8 @@ let SubnetField=React.createClass({
          const sql=window.require("sql.js");
          let proceed=dialog.showMessageBox({title:"Proceed",type:"warning",buttons:["Yes","Cancel"],message:"Saving larger subnets as schemas may take longer causing your application to freeze or even fail.Are you sure you want to continue?",});
          if(proceed==0){
-            dialog.showSaveDialog({title:"Save Schema As",defaultPath:"schemas"},(filename)=>{
+            const path=window.require("path");
+            dialog.showSaveDialog({title:"Save Schema As",defaultPath:path.resolve("./schemas/")},(filename)=>{
                 if(!filename) return ;
 
                 let schemaDB=new sql.Database();
@@ -200,7 +201,7 @@ let SubnetField=React.createClass({
                         }
                         let data=schemaDB.export();
                         let DB_Buffer=new Buffer(data);
-                        fs.writeFile(`${filename}.db`,DB_Buffer,(err)=>{
+                        fs.writeFile(`${path.resolve(filename)}.db`,DB_Buffer,(err)=>{
                             if(err){
                                     dialog.showErrorBox("Save Error",`${err.toString()}`);
                                     return;

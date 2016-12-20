@@ -37,17 +37,6 @@ function subnetCount(subBits){
 }
 
 /**
- * returns number of bits required to create the number of required subnets
- * @param {int} reqSubs - number of required subnets
- * @return {int} - number of bits required;
- */
-function subnetBits(reqSubs){
-    var subBits=Math.log(parseInt(reqSubs))/Math.log(2);
-    subBits=(subBits==parseInt(subBits)) ? subBits : parseInt(subBits)+1;
-    return subBits;
-}
-
-/**
  * returns number of bits required to have the number of required hosts .subnet
  * @param {int} reqHosts - number of required hosts/subnet
  * @return {int} - number of bits required;
@@ -77,6 +66,18 @@ function getBinary(binInt){
 }
 
 // EXPORTS
+
+/**
+ * returns number of bits required to create the number of required subnets
+ * @param {int} reqSubs - number of required subnets
+ * @return {int} - number of bits required;
+ */
+export function subnetBits(reqSubs){
+    var subBits=Math.log(parseInt(reqSubs))/Math.log(2);
+    subBits=(subBits==parseInt(subBits)) ? subBits : parseInt(subBits)+1;
+    return subBits;
+}
+
 /**
  * Validates IP address
  * @param {string} address - ip address

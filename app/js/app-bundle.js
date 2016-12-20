@@ -21787,51 +21787,54 @@
 	        var sql = window.require("sql.js");
 	        var proceed = dialog.showMessageBox({ title: "Proceed", type: "warning", buttons: ["Yes", "Cancel"], message: "Saving larger subnets as schemas may take longer causing your application to freeze or even fail.Are you sure you want to continue?" });
 	        if (proceed == 0) {
-	            dialog.showSaveDialog({ title: "Save Schema As", defaultPath: "schemas" }, function (filename) {
-	                if (!filename) return;
+	            (function () {
+	                var path = window.require("path");
+	                dialog.showSaveDialog({ title: "Save Schema As", defaultPath: path.resolve("./schemas/") }, function (filename) {
+	                    if (!filename) return;
 
-	                var schemaDB = new sql.Database();
+	                    var schemaDB = new sql.Database();
 
-	                //get data
-	                var subnets = _this.state.subnets;
-	                var subCount = _this.state.subnetCount;
-	                var newPrefix = _this.state.newPrefix;
-	                var orig_net = _this.state.curIP;
-	                var origBits = _this.state.origBits;
-	                var subHosts = _this.state.usable;
+	                    //get data
+	                    var subnets = _this.state.subnets;
+	                    var subCount = _this.state.subnetCount;
+	                    var newPrefix = _this.state.newPrefix;
+	                    var orig_net = _this.state.curIP;
+	                    var origBits = _this.state.origBits;
+	                    var subHosts = _this.state.usable;
 
-	                //prep data 
-	                var query = "CREATE TABLE net_info(parent_net string PRIMARY KEY,init_prefix varchar(4) NOT NULL,subnet_count int NOT NULL,sub_host int NOT NULL);";
-	                query += "INSERT INTO net_info VALUES('" + orig_net + "','" + origBits + "'," + subCount + "," + subHosts + ")";
-	                if (schemaDB.run(query)) {
-	                    //prep 
-	                    var curAdd = void 0;
-	                    var fs = window.require('electron').remote.require('fs');
-	                    try {
-	                        for (var sub = 0; sub < subnets.length; sub++) {
-	                            query = "CREATE TABLE subnet_" + sub + "(address string PRIMARY KEY,assigned bool default FALSE NOT NULL,device string,description string);";
-	                            for (var host = 1; host <= subHosts; host++) {
-	                                curAdd = (0, _ipv.binOctet)((0, _ipv.binInt)(subnets[sub].NA) + host >>> 0);
-	                                query += "INSERT INTO subnet_" + sub + " VALUES('" + curAdd + "','FALSE','--','--');";
+	                    //prep data 
+	                    var query = "CREATE TABLE net_info(parent_net string PRIMARY KEY,init_prefix varchar(4) NOT NULL,subnet_count int NOT NULL,sub_host int NOT NULL);";
+	                    query += "INSERT INTO net_info VALUES('" + orig_net + "','" + origBits + "'," + subCount + "," + subHosts + ")";
+	                    if (schemaDB.run(query)) {
+	                        //prep 
+	                        var curAdd = void 0;
+	                        var fs = window.require('electron').remote.require('fs');
+	                        try {
+	                            for (var sub = 0; sub < subnets.length; sub++) {
+	                                query = "CREATE TABLE subnet_" + sub + "(address string PRIMARY KEY,assigned bool default FALSE NOT NULL,device string,description string);";
+	                                for (var host = 1; host <= subHosts; host++) {
+	                                    curAdd = (0, _ipv.binOctet)((0, _ipv.binInt)(subnets[sub].NA) + host >>> 0);
+	                                    query += "INSERT INTO subnet_" + sub + " VALUES('" + curAdd + "','FALSE','--','--');";
+	                                }
+	                                schemaDB.run(query);
 	                            }
-	                            schemaDB.run(query);
+	                            var data = schemaDB.export();
+	                            var DB_Buffer = new Buffer(data);
+	                            fs.writeFile(path.resolve(filename) + ".db", DB_Buffer, function (err) {
+	                                if (err) {
+	                                    dialog.showErrorBox("Save Error", "" + err.toString());
+	                                    return;
+	                                }
+	                                dialog.showMessageBox({ type: "info", message: "The schema has been saved successfully!", buttons: ['Ok'] });
+	                            });
+	                        } catch (err) {
+	                            dialog.showErrorBox("Schema generation error", err.toString());
 	                        }
-	                        var data = schemaDB.export();
-	                        var DB_Buffer = new Buffer(data);
-	                        fs.writeFile(filename + ".db", DB_Buffer, function (err) {
-	                            if (err) {
-	                                dialog.showErrorBox("Save Error", "" + err.toString());
-	                                return;
-	                            }
-	                            dialog.showMessageBox({ type: "info", message: "The schema has been saved successfully!", buttons: ['Ok'] });
-	                        });
-	                    } catch (err) {
-	                        dialog.showErrorBox("Schema generation error", err.toString());
-	                    }
 
-	                    // console.log(filename);
-	                }
-	            });
+	                        // console.log(filename);
+	                    }
+	                });
+	            })();
 	        }
 	    },
 	    modeChange: function modeChange() {
@@ -24165,6 +24168,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
+	exports.subnetBits = subnetBits;
 	exports.isValidAddress = isValidAddress;
 	exports.isValidBits = isValidBits;
 	exports.isValidPrefix = isValidPrefix;
@@ -24210,17 +24214,6 @@
 	}
 
 	/**
-	 * returns number of bits required to create the number of required subnets
-	 * @param {int} reqSubs - number of required subnets
-	 * @return {int} - number of bits required;
-	 */
-	function subnetBits(reqSubs) {
-	    var subBits = Math.log(parseInt(reqSubs)) / Math.log(2);
-	    subBits = subBits == parseInt(subBits) ? subBits : parseInt(subBits) + 1;
-	    return subBits;
-	}
-
-	/**
 	 * returns number of bits required to have the number of required hosts .subnet
 	 * @param {int} reqHosts - number of required hosts/subnet
 	 * @return {int} - number of bits required;
@@ -24250,6 +24243,18 @@
 	}
 
 	// EXPORTS
+
+	/**
+	 * returns number of bits required to create the number of required subnets
+	 * @param {int} reqSubs - number of required subnets
+	 * @return {int} - number of bits required;
+	 */
+	function subnetBits(reqSubs) {
+	    var subBits = Math.log(parseInt(reqSubs)) / Math.log(2);
+	    subBits = subBits == parseInt(subBits) ? subBits : parseInt(subBits) + 1;
+	    return subBits;
+	}
+
 	/**
 	 * Validates IP address
 	 * @param {string} address - ip address
@@ -25229,11 +25234,23 @@
 	    value: true
 	});
 
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
 	var _react = __webpack_require__(1);
 
 	var _react2 = _interopRequireDefault(_react);
 
+	var _ip = __webpack_require__(177);
+
+	var _ipv = __webpack_require__(179);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	/**Electron imports */
+	var _window$require = window.require("electron"),
+	    remote = _window$require.remote;
+
+	var dialog = remote.dialog;
 
 	var HostEntry = _react2.default.createClass({
 	    displayName: "HostEntry",
@@ -25251,17 +25268,17 @@
 	            _react2.default.createElement(
 	                "td",
 	                { ref: "hostNum" },
-	                "x"
+	                this.props.subnet.num
 	            ),
 	            _react2.default.createElement(
 	                "td",
 	                { ref: "Address" },
-	                "xx.xx.xx.xx"
+	                this.props.subnet.address
 	            ),
 	            _react2.default.createElement(
 	                "td",
 	                { ref: "assigned", className: "text-center" },
-	                _react2.default.createElement("input", { type: "checkbox", checked: this.state.assigned ? true : false, onChange: this.assign })
+	                _react2.default.createElement("input", { type: "checkbox", checked: this.props.subnet.assigned != "FALSE" ? true : false, onChange: this.assign })
 	            ),
 	            _react2.default.createElement(
 	                "td",
@@ -25285,10 +25302,122 @@
 	        return { init: true };
 	    },
 	    reset: function reset() {
-	        this.setState({ init: true });
+	        this.setState({ init: true, curIP: '', pages: '', curPage: '', curSub: '', schemaDB: '', prefix: '', subMask: '', subs: '', hosts: '' });
 	    },
 	    loadSchema: function loadSchema() {
-	        this.setState({ init: false });
+	        var _this = this;
+
+	        var sql = window.require("sql.js");
+	        var path = window.require("path");
+	        dialog.showOpenDialog({ defaultPath: path.resolve("./schemas/"), filters: [{ name: "Schemas", extensions: ['db', 'DB'] }] }, function (filename) {
+	            if (!filename) {
+	                dialog.showErrorBox("File Error", err.toString());
+	                return;
+	            }
+	            var DB_Buffer = window.require("fs").readFileSync(filename.toString());
+
+	            //load db
+	            try {
+	                var schemaDB = new sql.Database(DB_Buffer);
+	                //prep data for presentation
+	                var query = "SELECT * FROM net_info";
+
+	                var _schemaDB$exec$0$valu = _slicedToArray(schemaDB.exec(query)[0].values[0], 4),
+	                    origNet = _schemaDB$exec$0$valu[0],
+	                    initBits = _schemaDB$exec$0$valu[1],
+	                    subs = _schemaDB$exec$0$valu[2],
+	                    hosts = _schemaDB$exec$0$valu[3];
+
+	                var prefix = parseInt(initBits) + (0, _ip.subnetBits)(subs);
+	                _this.setState({ schemaDB: schemaDB, prefix: prefix, subs: subs, hosts: hosts, subMask: (0, _ipv.translatePrefix)(prefix) });
+	                _this.setSub(0);
+	            } catch (err) {
+	                dialog.showErrorBox("Error loading db", err.toString());
+	            }
+	        });
+	    },
+	    netDown: function netDown() {
+	        var curSub = this.state.curSub;
+	        if (curSub - 1 < 0) {
+	            dialog.showErrorBox("Seek Error", "Out of bound");
+	            return;
+	        }
+	        this.setSub(curSub - 1);
+	    },
+	    netUp: function netUp() {
+	        var curSub = this.state.curSub;
+	        if (curSub + 1 >= this.state.subs) {
+	            dialog.showErrorBox("Seek Error", "Out of Bound");
+	            return;
+	        }
+	        this.setSub(curSub + 1);
+	    },
+	    setSub: function setSub(subNum) {
+	        var schemaDB = this.state.schemaDB;
+	        var prefix = this.state.prefix;
+	        var query = "SELECT * FROM subnet_" + subNum;
+	        var subnets_raw = schemaDB.exec(query);
+
+	        var _subnets_raw$0$values = _slicedToArray(subnets_raw[0].values[0], 1),
+	            curIP = _subnets_raw$0$values[0];
+
+	        //pack
+
+
+	        var pages = [],
+	            count = 0,
+	            sub = 0,
+	            nextPager = 10;
+	        console.log("Pages", Math.ceil(subnets_raw[0].values.length / 10));
+	        for (var page = 0; page < Math.ceil(subnets_raw[0].values.length / 10); page++) {
+	            var netPage = [];
+	            while (sub < nextPager) {
+	                if (subnets_raw[0].values[sub]) {
+	                    var _subnets_raw$0$values2 = _slicedToArray(subnets_raw[0].values[sub], 4),
+	                        address = _subnets_raw$0$values2[0],
+	                        assigned = _subnets_raw$0$values2[1],
+	                        device = _subnets_raw$0$values2[2],
+	                        description = _subnets_raw$0$values2[3];
+
+	                    netPage.push({ num: count + 1, address: address, assigned: assigned, device: device, description: description });
+	                    sub++;
+	                    count++;
+	                } else {
+	                    break;
+	                }
+	            }
+	            if (netPage.length == 0) break;
+	            nextPager += 10;
+	            pages.push({ num: page, subnets: netPage.slice(0) });
+	        }
+	        this.setState({ init: false, curIP: (0, _ip.currentNetwork)(curIP, '/' + prefix.toString()), pages: pages, curPage: 0, curSub: subNum });
+	    },
+
+	    pageDown: function pageDown() {
+	        var curPage = this.state.curPage;
+	        if (curPage - 1 < 0) {
+	            dialog.showErrorBox("Seek Error", "The specified host page does not exist");
+	            return;
+	        }
+	        this.setState({ curPage: curPage - 1 });
+	    },
+	    pageUp: function pageUp() {
+	        var curPage = this.state.curPage;
+	        if (curPage + 1 >= this.state.pages.length) {
+	            dialog.showErrorBox("Seek Error", "The specified host page does not exist");
+	            return;
+	        }
+	        this.setState({ curPage: curPage + 1 });
+	    },
+	    gotoPage: function gotoPage() {
+	        var pageNum = this.refs.pageBox.value;
+	        try {
+	            pageNum -= 1; // remove one from the user's input ...0 based indices
+	            if (!this.state.pages[parseInt(pageNum)]) throw new Error("Page number out of bound");
+	            this.setState({ curPage: pageNum });
+	        } catch (err) {
+	            dialog.showErrorBox("Seek Error", err.toString());
+	        }
 	    },
 	    normalRender: function normalRender() {
 	        return _react2.default.createElement(
@@ -25321,7 +25450,10 @@
 	                _react2.default.createElement(
 	                    "p",
 	                    { className: "well well-sm col-sm-6" },
-	                    "xx.xx.xx.xx Network Schema"
+	                    this.state.curIP,
+	                    "/",
+	                    this.state.prefix,
+	                    " Network Schema"
 	                ),
 	                _react2.default.createElement(
 	                    "div",
@@ -25337,14 +25469,19 @@
 	                _react2.default.createElement(
 	                    "p",
 	                    { className: "col-sm-3" },
-	                    "Network x of xx"
+	                    "Network ",
+	                    this.state.curSub + 1,
+	                    " of ",
+	                    this.state.subs
 	                ),
 	                _react2.default.createElement(
 	                    "div",
 	                    { className: "col-sm-2" },
-	                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-left" }),
+	                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-left", onClick: this.netDown,
+	                        disabled: !(this.state.curSub - 1) < 0 ? true : false }),
 	                    "\xA0",
-	                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-right" })
+	                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-right", onClick: this.netUp,
+	                        disabled: this.state.curSub + 1 >= this.state.subs ? true : false })
 	                )
 	            ),
 	            _react2.default.createElement(
@@ -25362,7 +25499,10 @@
 	                            _react2.default.createElement(
 	                                "caption",
 	                                null,
-	                                "Hosts"
+	                                this.state.curIP,
+	                                "/",
+	                                this.state.prefix,
+	                                " Hosts"
 	                            ),
 	                            _react2.default.createElement(
 	                                "thead",
@@ -25400,10 +25540,9 @@
 	                            _react2.default.createElement(
 	                                "tbody",
 	                                null,
-	                                _react2.default.createElement(HostEntry, null),
-	                                _react2.default.createElement(HostEntry, null),
-	                                _react2.default.createElement(HostEntry, null),
-	                                _react2.default.createElement(HostEntry, null)
+	                                this.state.pages[this.state.curPage].subnets.map(function (subnet, index) {
+	                                    return _react2.default.createElement(HostEntry, { subnet: subnet, key: index });
+	                                })
 	                            )
 	                        ),
 	                        _react2.default.createElement(
@@ -25420,11 +25559,11 @@
 	                                        { className: "sr-only", htmlFor: "subnet number" },
 	                                        "Go to"
 	                                    ),
-	                                    _react2.default.createElement("input", { className: "form-control", ref: "subBox", placeholder: "go to host page" })
+	                                    _react2.default.createElement("input", { className: "form-control", ref: "pageBox", placeholder: "go to host page" })
 	                                ),
 	                                _react2.default.createElement(
 	                                    "button",
-	                                    { style: { marginLeft: 1 + 'px', marginTop: 2 + 'px', borderRadius: 0 + 'px' }, type: "button", onClick: this.setSub, className: "btn btn-default" },
+	                                    { style: { marginLeft: 1 + 'px', marginTop: 2 + 'px', borderRadius: 0 + 'px' }, type: "button", onClick: this.gotoPage, className: "btn btn-default" },
 	                                    "Go"
 	                                )
 	                            ),
@@ -25434,14 +25573,19 @@
 	                                _react2.default.createElement(
 	                                    "p",
 	                                    { className: "col-sm-3" },
-	                                    "Host Page x of xx"
+	                                    "Host Page  ",
+	                                    this.state.curPage + 1,
+	                                    " of ",
+	                                    this.state.pages.length
 	                                ),
 	                                _react2.default.createElement(
 	                                    "div",
 	                                    { className: "col-sm-2" },
-	                                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-left" }),
+	                                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-left", onClick: this.pageDown,
+	                                        disabled: !this.state.curPage > 0 ? true : false }),
 	                                    "\xA0",
-	                                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-right" })
+	                                    _react2.default.createElement("button", { className: "btn btn-sm btn-default fa fa-chevron-right", onClick: this.pageUp,
+	                                        disabled: this.state.curPage + 1 >= this.state.pages.length ? true : false })
 	                                )
 	                            )
 	                        )
@@ -25490,7 +25634,7 @@
 	                                _react2.default.createElement(
 	                                    "td",
 	                                    null,
-	                                    "xx:"
+	                                    this.state.hosts
 	                                )
 	                            ),
 	                            _react2.default.createElement(
@@ -25504,7 +25648,8 @@
 	                                _react2.default.createElement(
 	                                    "td",
 	                                    null,
-	                                    "/xx"
+	                                    "/",
+	                                    this.state.prefix
 	                                )
 	                            ),
 	                            _react2.default.createElement(
@@ -25518,21 +25663,7 @@
 	                                _react2.default.createElement(
 	                                    "td",
 	                                    null,
-	                                    "xx.xx.xx.xx:"
-	                                )
-	                            ),
-	                            _react2.default.createElement(
-	                                "tr",
-	                                null,
-	                                _react2.default.createElement(
-	                                    "td",
-	                                    null,
-	                                    "Class:"
-	                                ),
-	                                _react2.default.createElement(
-	                                    "td",
-	                                    null,
-	                                    "AA"
+	                                    this.state.subMask
 	                                )
 	                            ),
 	                            _react2.default.createElement(
@@ -25547,7 +25678,7 @@
 	                                _react2.default.createElement(
 	                                    "td",
 	                                    null,
-	                                    "xx"
+	                                    this.state.subs
 	                                )
 	                            )
 	                        )
