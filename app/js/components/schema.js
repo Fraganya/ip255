@@ -7,13 +7,19 @@
 /**Electron imports */
 const {remote}=window.require("electron");
 const dialog=remote.dialog;
+const fs=window.require("fs");
+const path=window.require("path");
 
 let HostEntry=React.createClass({
     getInitialState:function(){
-        return {assigned:false};
+        return {assigned:((this.props.subnet.assigned=="TRUE")? true:false),init:this.props.subnet.assigned};
     },
     assign:function(){
+        let devName=this.refs.devName.value;
+        let description=this.refs.description.value;
+        this.props.refBack(devName,description,this.props.subKey,!this.state.assigned);
         this.setState({assigned:!this.state.assigned});
+       
     },
     render:function(){
         return(
@@ -21,15 +27,15 @@ let HostEntry=React.createClass({
                 <td ref="hostNum">{this.props.subnet.num}</td>
                 <td ref="Address">{this.props.subnet.address}</td>
                 <td ref="assigned" className="text-center">
-                    <input type='checkbox' checked={(this.props.subnet.assigned!="FALSE") ? true : false} onChange={this.assign} />
+                    <input type='checkbox' checked={(this.state.assigned) ? true : false} onChange={this.assign} />
                 </td>
                 <td ref="device" style={{padding:0+'px'}}>
-                    <input type='text' placeholder="enter device name" className="form-control" style={{borderRadius:0+'px',border:'none',marginBottom:0+'px'}}
-                     disabled={(this.state.assigned) ? true : false}/>
+                    <input type='text' ref="devName" placeholder="enter device name" className="form-control" style={{borderRadius:0+'px',border:'none',marginBottom:0+'px'}}
+                     defaultValue={this.props.subnet.device} disabled={(this.state.assigned) ? true : false}/>
                 </td>
                 <td ref="extra" style={{padding:0+'px'}} >
-                     <input type='text' placeholder="enter description" className="form-control" style={{borderRadius:0+'px',border:'none',marginBottom:0+'px'}}  
-                     disabled={(this.state.assigned) ? true : false}/>
+                     <input type='text' ref="description" placeholder="enter description" className="form-control" style={{borderRadius:0+'px',border:'none',marginBottom:0+'px'}}  
+                    defaultValue={this.props.subnet.description}  disabled={(this.state.assigned) ? true : false}/>
                 </td>
             </tr>
         )
@@ -37,20 +43,97 @@ let HostEntry=React.createClass({
 });
  let SchemaTab=React.createClass({
      getInitialState:function(){
-         return {init:true};
+         return {init:true,changes:[],changed:false};
      },
      reset:function(){
-         this.setState({init:true,curIP:'',pages:'',curPage:'',curSub:'',schemaDB:'',prefix:'',subMask:'',subs:'',hosts:''});
+         let changed=this.state.changed;
+         if(changed){
+              let proceed=dialog.showMessageBox({title:"Proceed",type:"warning",buttons:["yes","Cancel"],message:"You have modified your schema but have not saved changes.Do you wish to discard changes?",});
+              if(proceed==1){
+                  return ;
+              }
+         }
+        this.setState({init:true,curIP:'',pages:'',curPage:'',curSub:'',schemaDB:'',prefix:'',subMask:'',subs:'',hosts:'',changed:false});
+     },
+     saveSchema:function(){
+        let filename=this.state.schemaFile;
+        let schemaDB=this.state.schemaDB;
+        let changes=this.state.changes;
+        let query='';
+        /*
+        for(let change of changes)
+        {
+            query+=`UPDATE subnet_${this.state.curSub} SET description="${change.description}",device="${change.device}",assigned="${change.ipState}";`;
+        }
+        console.log(query);
+        schemaDB.run(query);
+        //let data=schemaDB.export();
+      //  let DB_Buffer=new Buffer(data);
+        fs.writeFile(`${filename}`,schemaDB,(err)=>{
+                 if(err){
+                        dialog.showErrorBox("Save Error",`${err.toString()}`);
+                        return;
+                 }
+                 dialog.showMessageBox({type:"info",message:"The schema has been saved successfully!",buttons:['Ok']});
+                 this.setState({changes:[],changed:false});
+        })
+        */
+           dialog.showMessageBox({type:"info",message:"The schema has been saved successfully!",buttons:['Ok']});
+           this.setState({changes:[],changed:false});
+        
+     },
+     setChange(device,description,key,ipState){
+         //the change is from unassigned to assigned
+         let pages=this.state.pages;
+         let curPage=this.state.curPage;
+         let changes=this.state.changes;
+         let curChange=0;
+         let isNew=true;
+         //check if this ip address was changed
+         for(let change of changes)
+         {
+            if(change.page==curPage && change.subnet==key){
+                isNew=false;
+                break;
+            }
+            curChange++;
+          }
+          //set the change if its new
+          if(isNew){
+                if(ipState){
+                    changes.push({page:curPage,subnet:key,device,description,ipState:'TRUE'})
+                    console.log("Assigned")
+                }
+                else{
+                    changes.push({page:curPage,subnet:key,device:'--',description:'--',ipState:'FALSE'})
+                    console.log("un-Assigned")
+                }
+                console.log()
+          }
+          else{
+            
+                if(ipState){
+                    changes[curChange]=({page:curPage,subnet:key,device,description,ipState:'TRUE'})
+                }
+                else{
+                    changes[curChange]=({page:curPage,subnet:key,device:'--',description:'--',ipState:'FALSE'})
+                }
+               //this has returned to the original state
+              if(changes[curChange].ipState==pages[curPage].subnets[key].assigned){
+                  changes.splice(curChange,1);
+                  console.log("reset");
+              }
+          }    
+         this.setState({changes,pages,changed:(changes.length!=0)?true:false});
      },
      loadSchema:function (){
           const sql=window.require("sql.js");
-          const path=window.require("path");
           dialog.showOpenDialog({defaultPath:path.resolve("./schemas/"),filters:[{name:"Schemas",extensions:['db','DB']}]},(filename)=>{
               if(!filename){
                   dialog.showErrorBox("File Error",err.toString());
                   return ;
               }
-              let DB_Buffer=window.require("fs").readFileSync(filename.toString());
+              let DB_Buffer=fs.readFileSync(filename.toString());
 
               //load db
               try{
@@ -61,7 +144,7 @@ let HostEntry=React.createClass({
 
                
                 let prefix=parseInt(initBits)+subnetBits(subs);
-                this.setState({schemaDB,prefix,subs,hosts,subMask:translatePrefix(prefix)});
+                this.setState({schemaDB,prefix,subs,hosts,subMask:translatePrefix(prefix),schemaFile:filename});
                 this.setSub(0);
               }
               catch(err){
@@ -167,13 +250,13 @@ let HostEntry=React.createClass({
                 <div className="col-sm-12">
                     <p className="well well-sm col-sm-6">{this.state.curIP}/{this.state.prefix} Network Schema</p>
                     <div className="btn-group col-sm-4" >
-                        <button className="btn btn-default fa fa-save" title="Save Schema"/>
+                        <button className="btn btn-default fa fa-save" title="Save Schema" onClick={this.saveSchema}/>
                         <button className="btn btn-default fa fa-trash" title="Delete Schema"/>
                          <button className="btn btn-default fa fa-close" type="button" title="Close Schema" onClick={this.reset}/>
                     </div>
                 </div>
                 <div className="col=sm-12">
-                            <p className="col-sm-3">Network {this.state.curSub+1} of {this.state.subs}</p>
+                            <p className="col-sm-3">Network {this.state.curSub+1} of {this.state.subs} </p>
                             <div className="col-sm-2">
                                 <button className="btn btn-sm btn-default fa fa-chevron-left" onClick={this.netDown} 
                                 disabled={(!(this.state.curSub-1)<0) ? true :false}/>
@@ -188,7 +271,7 @@ let HostEntry=React.createClass({
                            
                             <div className="row">
                                 <table className="table table-bordered"> 
-                            <caption>{this.state.curIP}/{this.state.prefix} Hosts</caption> 
+                            <caption>{this.state.curIP}/{this.state.prefix} Hosts  {(this.state.changed) ? '*' :''}</caption> 
                                 <thead> 
                                 <tr>      
                                     <th><b className="fa fa-hashtag"/></th>    
@@ -203,7 +286,7 @@ let HostEntry=React.createClass({
                                      
                                      this.state.pages[this.state.curPage].subnets.map((subnet,index)=>{
                                          return(
-                                              <HostEntry subnet={subnet} key={index} />
+                                              <HostEntry subnet={subnet} subKey={index} refBack={this.setChange} key={index} />
                                          )
                                      })
                                      

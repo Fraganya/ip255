@@ -21699,7 +21699,7 @@
 	    displayName: "SubnettingTab",
 
 	    getInitialState: function getInitialState() {
-	        return { init: true, basic: true, reqSubnets: [{ hosts: 0, num: 1 }], subnetCount: 1, useVLSM: false, errors: [] };
+	        return { init: true, basic: true, reqSubnets: [{ hosts: 0, num: 1 }], subnetCount: 1, useVLSM: false, errors: [], savingSchema: false };
 	    },
 	    subnetBasic: function subnetBasic() {
 	        var ipType = this.refs.ipType.value;
@@ -21791,7 +21791,7 @@
 	                var path = window.require("path");
 	                dialog.showSaveDialog({ title: "Save Schema As", defaultPath: path.resolve("./schemas/") }, function (filename) {
 	                    if (!filename) return;
-
+	                    _this.setState({ savingSchema: true });
 	                    var schemaDB = new sql.Database();
 
 	                    //get data
@@ -21826,9 +21826,11 @@
 	                                    return;
 	                                }
 	                                dialog.showMessageBox({ type: "info", message: "The schema has been saved successfully!", buttons: ['Ok'] });
+	                                _this.setState({ savingSchema: false });
 	                            });
 	                        } catch (err) {
 	                            dialog.showErrorBox("Schema generation error", err.toString());
+	                            _this.setState({ savingSchema: false });;
 	                        }
 
 	                        // console.log(filename);
@@ -22144,7 +22146,8 @@
 	                        _react2.default.createElement(
 	                            "button",
 	                            { style: { marginLeft: 1 + 'px', borderRadius: 0 + 'px' }, type: "button", className: "btn btn-default glyphicon glyphicon-floppy-disk", onClick: this.saveSchema },
-	                            "Schema"
+	                            "Schema\xA0",
+	                            this.state.savingSchema ? _react2.default.createElement("span", { className: "fa fa-gear fa-spin" }) : ''
 	                        )
 	                    )
 	                )
@@ -25251,14 +25254,19 @@
 	    remote = _window$require.remote;
 
 	var dialog = remote.dialog;
+	var fs = window.require("fs");
+	var path = window.require("path");
 
 	var HostEntry = _react2.default.createClass({
 	    displayName: "HostEntry",
 
 	    getInitialState: function getInitialState() {
-	        return { assigned: false };
+	        return { assigned: this.props.subnet.assigned == "TRUE" ? true : false, init: this.props.subnet.assigned };
 	    },
 	    assign: function assign() {
+	        var devName = this.refs.devName.value;
+	        var description = this.refs.description.value;
+	        this.props.refBack(devName, description, this.props.subKey, !this.state.assigned);
 	        this.setState({ assigned: !this.state.assigned });
 	    },
 	    render: function render() {
@@ -25278,19 +25286,19 @@
 	            _react2.default.createElement(
 	                "td",
 	                { ref: "assigned", className: "text-center" },
-	                _react2.default.createElement("input", { type: "checkbox", checked: this.props.subnet.assigned != "FALSE" ? true : false, onChange: this.assign })
+	                _react2.default.createElement("input", { type: "checkbox", checked: this.state.assigned ? true : false, onChange: this.assign })
 	            ),
 	            _react2.default.createElement(
 	                "td",
 	                { ref: "device", style: { padding: 0 + 'px' } },
-	                _react2.default.createElement("input", { type: "text", placeholder: "enter device name", className: "form-control", style: { borderRadius: 0 + 'px', border: 'none', marginBottom: 0 + 'px' },
-	                    disabled: this.state.assigned ? true : false })
+	                _react2.default.createElement("input", { type: "text", ref: "devName", placeholder: "enter device name", className: "form-control", style: { borderRadius: 0 + 'px', border: 'none', marginBottom: 0 + 'px' },
+	                    defaultValue: this.props.subnet.device, disabled: this.state.assigned ? true : false })
 	            ),
 	            _react2.default.createElement(
 	                "td",
 	                { ref: "extra", style: { padding: 0 + 'px' } },
-	                _react2.default.createElement("input", { type: "text", placeholder: "enter description", className: "form-control", style: { borderRadius: 0 + 'px', border: 'none', marginBottom: 0 + 'px' },
-	                    disabled: this.state.assigned ? true : false })
+	                _react2.default.createElement("input", { type: "text", ref: "description", placeholder: "enter description", className: "form-control", style: { borderRadius: 0 + 'px', border: 'none', marginBottom: 0 + 'px' },
+	                    defaultValue: this.props.subnet.description, disabled: this.state.assigned ? true : false })
 	            )
 	        );
 	    }
@@ -25299,22 +25307,136 @@
 	    displayName: "SchemaTab",
 
 	    getInitialState: function getInitialState() {
-	        return { init: true };
+	        return { init: true, changes: [], changed: false };
 	    },
 	    reset: function reset() {
-	        this.setState({ init: true, curIP: '', pages: '', curPage: '', curSub: '', schemaDB: '', prefix: '', subMask: '', subs: '', hosts: '' });
+	        var changed = this.state.changed;
+	        if (changed) {
+	            var proceed = dialog.showMessageBox({ title: "Proceed", type: "warning", buttons: ["yes", "Cancel"], message: "You have modified your schema but have not saved changes.Do you wish to discard changes?" });
+	            if (proceed == 1) {
+	                return;
+	            }
+	        }
+	        this.setState({ init: true, curIP: '', pages: '', curPage: '', curSub: '', schemaDB: '', prefix: '', subMask: '', subs: '', hosts: '', changed: false });
 	    },
-	    loadSchema: function loadSchema() {
+	    saveSchema: function saveSchema() {
 	        var _this = this;
 
+	        var filename = this.state.schemaFile;
+	        var schemaDB = this.state.schemaDB;
+	        var changes = this.state.changes;
+	        var query = '';
+	        var _iteratorNormalCompletion = true;
+	        var _didIteratorError = false;
+	        var _iteratorError = undefined;
+
+	        try {
+	            for (var _iterator = changes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	                var change = _step.value;
+
+	                query += "UPDATE subnet_" + this.state.curSub + " SET description=\"" + change.description + "\",device=\"" + change.device + "\",assigned=\"" + change.ipState + "\";";
+	            }
+	        } catch (err) {
+	            _didIteratorError = true;
+	            _iteratorError = err;
+	        } finally {
+	            try {
+	                if (!_iteratorNormalCompletion && _iterator.return) {
+	                    _iterator.return();
+	                }
+	            } finally {
+	                if (_didIteratorError) {
+	                    throw _iteratorError;
+	                }
+	            }
+	        }
+
+	        console.log(query);
+	        schemaDB.run(query);
+	        //let data=schemaDB.export();
+	        //  let DB_Buffer=new Buffer(data);
+	        fs.writeFile("" + filename, schemaDB, function (err) {
+	            if (err) {
+	                dialog.showErrorBox("Save Error", "" + err.toString());
+	                return;
+	            }
+	            dialog.showMessageBox({ type: "info", message: "The schema has been saved successfully!", buttons: ['Ok'] });
+	            _this.setState({ changes: [], changed: false });
+	        });
+	    },
+	    setChange: function setChange(device, description, key, ipState) {
+	        //the change is from unassigned to assigned
+	        var pages = this.state.pages;
+	        var curPage = this.state.curPage;
+	        var changes = this.state.changes;
+	        var curChange = 0;
+	        var isNew = true;
+	        //check if this ip address was changed
+	        var _iteratorNormalCompletion2 = true;
+	        var _didIteratorError2 = false;
+	        var _iteratorError2 = undefined;
+
+	        try {
+	            for (var _iterator2 = changes[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	                var change = _step2.value;
+
+	                if (change.page == curPage && change.subnet == key) {
+	                    isNew = false;
+	                    break;
+	                }
+	                curChange++;
+	            }
+	            //set the change if its new
+	        } catch (err) {
+	            _didIteratorError2 = true;
+	            _iteratorError2 = err;
+	        } finally {
+	            try {
+	                if (!_iteratorNormalCompletion2 && _iterator2.return) {
+	                    _iterator2.return();
+	                }
+	            } finally {
+	                if (_didIteratorError2) {
+	                    throw _iteratorError2;
+	                }
+	            }
+	        }
+
+	        if (isNew) {
+	            if (ipState) {
+	                changes.push({ page: curPage, subnet: key, device: device, description: description, ipState: 'TRUE' });
+	                console.log("Assigned");
+	            } else {
+	                changes.push({ page: curPage, subnet: key, device: '--', description: '--', ipState: 'FALSE' });
+	                console.log("un-Assigned");
+	            }
+	            console.log();
+	        } else {
+
+	            if (ipState) {
+	                changes[curChange] = { page: curPage, subnet: key, device: device, description: description, ipState: 'TRUE' };
+	            } else {
+	                changes[curChange] = { page: curPage, subnet: key, device: '--', description: '--', ipState: 'FALSE' };
+	            }
+	            //this has returned to the original state
+	            if (changes[curChange].ipState == pages[curPage].subnets[key].assigned) {
+	                changes.splice(curChange, 1);
+	                console.log("reset");
+	            }
+	        }
+	        this.setState({ changes: changes, pages: pages, changed: changes.length != 0 ? true : false });
+	    },
+
+	    loadSchema: function loadSchema() {
+	        var _this2 = this;
+
 	        var sql = window.require("sql.js");
-	        var path = window.require("path");
 	        dialog.showOpenDialog({ defaultPath: path.resolve("./schemas/"), filters: [{ name: "Schemas", extensions: ['db', 'DB'] }] }, function (filename) {
 	            if (!filename) {
 	                dialog.showErrorBox("File Error", err.toString());
 	                return;
 	            }
-	            var DB_Buffer = window.require("fs").readFileSync(filename.toString());
+	            var DB_Buffer = fs.readFileSync(filename.toString());
 
 	            //load db
 	            try {
@@ -25329,8 +25451,8 @@
 	                    hosts = _schemaDB$exec$0$valu[3];
 
 	                var prefix = parseInt(initBits) + (0, _ip.subnetBits)(subs);
-	                _this.setState({ schemaDB: schemaDB, prefix: prefix, subs: subs, hosts: hosts, subMask: (0, _ipv.translatePrefix)(prefix) });
-	                _this.setSub(0);
+	                _this2.setState({ schemaDB: schemaDB, prefix: prefix, subs: subs, hosts: hosts, subMask: (0, _ipv.translatePrefix)(prefix), schemaFile: filename });
+	                _this2.setSub(0);
 	            } catch (err) {
 	                dialog.showErrorBox("Error loading db", err.toString());
 	            }
@@ -25441,6 +25563,8 @@
 	        );
 	    },
 	    finalRender: function finalRender() {
+	        var _this3 = this;
+
 	        return _react2.default.createElement(
 	            "div",
 	            { className: "row" },
@@ -25458,7 +25582,7 @@
 	                _react2.default.createElement(
 	                    "div",
 	                    { className: "btn-group col-sm-4" },
-	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-save", title: "Save Schema" }),
+	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-save", title: "Save Schema", onClick: this.saveSchema }),
 	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-trash", title: "Delete Schema" }),
 	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-close", type: "button", title: "Close Schema", onClick: this.reset })
 	                )
@@ -25472,7 +25596,8 @@
 	                    "Network ",
 	                    this.state.curSub + 1,
 	                    " of ",
-	                    this.state.subs
+	                    this.state.subs,
+	                    " "
 	                ),
 	                _react2.default.createElement(
 	                    "div",
@@ -25502,7 +25627,8 @@
 	                                this.state.curIP,
 	                                "/",
 	                                this.state.prefix,
-	                                " Hosts"
+	                                " Hosts  ",
+	                                this.state.changed ? '*' : ''
 	                            ),
 	                            _react2.default.createElement(
 	                                "thead",
@@ -25541,7 +25667,7 @@
 	                                "tbody",
 	                                null,
 	                                this.state.pages[this.state.curPage].subnets.map(function (subnet, index) {
-	                                    return _react2.default.createElement(HostEntry, { subnet: subnet, key: index });
+	                                    return _react2.default.createElement(HostEntry, { subnet: subnet, subKey: index, refBack: _this3.setChange, key: index });
 	                                })
 	                            )
 	                        ),

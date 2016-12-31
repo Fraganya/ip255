@@ -96,7 +96,7 @@ let SubnetField=React.createClass({
  
  let SubnettingTab=React.createClass({
      getInitialState:function(){
-         return {init:true,basic:true,reqSubnets:[{hosts:0,num:1}],subnetCount:1,useVLSM:false,errors:[]}
+         return {init:true,basic:true,reqSubnets:[{hosts:0,num:1}],subnetCount:1,useVLSM:false,errors:[],savingSchema:false}
      },
      subnetBasic:function(){
          let ipType=this.refs.ipType.value
@@ -169,7 +169,7 @@ let SubnetField=React.createClass({
             const path=window.require("path");
             dialog.showSaveDialog({title:"Save Schema As",defaultPath:path.resolve("./schemas/")},(filename)=>{
                 if(!filename) return ;
-
+                this.setState({savingSchema:true});
                 let schemaDB=new sql.Database();
 
                 //get data
@@ -207,10 +207,12 @@ let SubnetField=React.createClass({
                                     return;
                             }
                             dialog.showMessageBox({type:"info",message:"The schema has been saved successfully!",buttons:['Ok']});
+                            this.setState({savingSchema:false});
                         })
                     }
                     catch(err){
-                        dialog.showErrorBox("Schema generation error",err.toString())
+                        dialog.showErrorBox("Schema generation error",err.toString());
+                         this.setState({savingSchema:false});;
                     }
                 
                 // console.log(filename);
@@ -417,7 +419,7 @@ let SubnetField=React.createClass({
                         <button className="btn btn-default glyphicon glyphicon-chevron-right" type="button" onClick={this.subUp}
                         disabled={(this.state.curSub==(this.state.subnetCount-1)) ? true : false} />
                         <button style={{marginLeft:1+'px',borderRadius:0+'px'}} type="button" className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.saveSchema}>
-                        Schema
+                        Schema&nbsp;{(this.state.savingSchema) ? <span className="fa fa-gear fa-spin"/> : ''}
                         </button>
                     </div> 
                 </div>
