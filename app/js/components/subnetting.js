@@ -16,7 +16,7 @@ import {binOctet} from '../lib/ipv4.js';
 /**Electron imports */
 const {remote}=window.require("electron");
 const dialog=remote.dialog;
-const sql=window.require("sql.js");
+const sqlite3=window.require('sqlite3').verbose();
 
 let SubnetField=React.createClass({
      handleChange:function(){
@@ -163,66 +163,51 @@ let SubnetField=React.createClass({
         }
      },
      saveSchema:function(){
-         const sql=window.require("sql.js");
          let proceed=dialog.showMessageBox({title:"Proceed",type:"warning",buttons:["Yes","Cancel"],message:"Saving larger subnets as schemas may take longer causing your application to freeze or even fail.Are you sure you want to continue?",});
          if(proceed==0){
             const path=window.require("path");
             dialog.showSaveDialog({title:"Save Schema As",defaultPath:path.resolve("./schemas/")},(filename)=>{
                 if(!filename) return ;
                 this.setState({savingSchema:true});
-                let schemaDB=new sql.Database();
+                filename=(filename.lastIndexOf(".db")==filename.search(".db")) ? filename : filename+'.db';
+                let schemaDB=new sqlite3.Database(`${path.resolve(filename)}.db`);
+                schemaDB.serialize(()=>{
+                     //get data
+                    let subnets=this.state.subnets;
+                    let subCount=this.state.subnetCount;
+                    let newPrefix=this.state.newPrefix;
+                    let orig_net=this.state.curIP;
+                    let origBits=this.state.origBits;
+                    let subHosts=this.state.usable;
 
-                //get data
-                let subnets=this.state.subnets;
-                let subCount=this.state.subnetCount;
-                let newPrefix=this.state.newPrefix;
-                let orig_net=this.state.curIP;
-                let origBits=this.state.origBits;
-                let subHosts=this.state.usable;
-
-                //prep data 
-                let query=`CREATE TABLE net_info(parent_net string PRIMARY KEY,init_prefix varchar(4) NOT NULL,subnet_count int NOT NULL,sub_host int NOT NULL);`;
-                query+=`INSERT INTO net_info VALUES('${orig_net}','${origBits}',${subCount},${subHosts})`;
-                if(schemaDB.run(query)){
-                    //prep 
+                    schemaDB.run(`CREATE TABLE net_info(parent_net string PRIMARY KEY,init_prefix varchar(4) NOT NULL,subnet_count int NOT NULL,sub_host int NOT NULL);`);
+                    schemaDB.run(`INSERT INTO net_info VALUES('${orig_net}','${origBits}',${subCount},${subHosts})`);
+                    
+                    //generate net tables
                     let curAdd;
-                    const fs =window.require('electron').remote.require('fs');
                     try{
                         for(let sub=0;sub<subnets.length;sub++)
                         {
-                            query=`CREATE TABLE subnet_${sub}(address string PRIMARY KEY,assigned bool default FALSE NOT NULL,device string,description string);`;
+                            schemaDB.run(`CREATE TABLE subnet_${sub}(address string PRIMARY KEY,assigned bool default FALSE NOT NULL,device string,description string);`);
+                            let query=schemaDB.prepare(`INSERT INTO subnet_${sub} VALUES(?,'FALSE','--','--');`)
                             for(let host=1;host<=subHosts;host++)
                             {
                                 curAdd=binOctet((binInt(subnets[sub].NA)+host)>>>0);
-                                query+=`INSERT INTO subnet_${sub} VALUES('${curAdd}','FALSE','--','--');`;
-
+                                query.run(curAdd);
                             }
-                            schemaDB.run(query);
+                            query.finalize();
                         }
-                        let data=schemaDB.export();
-                        let DB_Buffer=new Buffer(data);
-                        fs.writeFile(`${path.resolve(filename)}.db`,DB_Buffer,(err)=>{
-                            if(err){
-                                    dialog.showErrorBox("Save Error",`${err.toString()}`);
-                                    return;
-                            }
-                            dialog.showMessageBox({type:"info",message:"The schema has been saved successfully!",buttons:['Ok']});
-                            this.setState({savingSchema:false});
-                        })
+                        schemaDB.close();
+                        dialog.showMessageBox({title:"Success!",message:"IP address schema saved successfully!"});
+                        this.setState({savingSchema:false});
                     }
                     catch(err){
                         dialog.showErrorBox("Schema generation error",err.toString());
-                         this.setState({savingSchema:false});;
-                    }
-                
-                // console.log(filename);
-
-                    }
-                
+                        this.setState({savingSchema:false});;
+                    }            
             })
-         }
-    
-
+        })
+        }
      },
      modeChange:function(){
          let mode=this.refs.mode.value;

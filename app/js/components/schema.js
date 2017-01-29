@@ -9,15 +9,19 @@ const {remote}=window.require("electron");
 const dialog=remote.dialog;
 const fs=window.require("fs");
 const path=window.require("path");
+const sqlite3=window.require('sqlite3').verbose();
 
 let HostEntry=React.createClass({
     getInitialState:function(){
-        return {assigned:((this.props.subnet.assigned=="TRUE")? true:false),init:this.props.subnet.assigned};
+        return {assigned:true};
     },
     assign:function(){
         let devName=this.refs.devName.value;
         let description=this.refs.description.value;
-        this.props.refBack(devName,description,this.props.subKey,!this.state.assigned);
+        this.refs.description.value=(description.trim().length!=0) ? description : '--';
+        this.refs.devName.value=(devName.trim().length!=0) ? devName : '--';
+       // this.props.refBack(devName,description,this.props.key,!this.state.assigned,this.props.page);
+        console.log(this.props.subnet);
         this.setState({assigned:!this.state.assigned});
        
     },
@@ -35,7 +39,7 @@ let HostEntry=React.createClass({
                 </td>
                 <td ref="extra" style={{padding:0+'px'}} >
                      <input type='text' ref="description" placeholder="enter description" className="form-control" style={{borderRadius:0+'px',border:'none',marginBottom:0+'px'}}  
-                    defaultValue={this.props.subnet.description}  disabled={(this.state.assigned) ? true : false}/>
+                      defaultValue={this.props.subnet.description}  disabled={(this.state.assigned) ? true : false}/>
                 </td>
             </tr>
         )
@@ -53,36 +57,32 @@ let HostEntry=React.createClass({
                   return ;
               }
          }
+        this.state.schemaDB.close();
         this.setState({init:true,curIP:'',pages:'',curPage:'',curSub:'',schemaDB:'',prefix:'',subMask:'',subs:'',hosts:'',changed:false});
      },
      saveSchema:function(){
         let filename=this.state.schemaFile;
         let schemaDB=this.state.schemaDB;
         let changes=this.state.changes;
-        let query='';
-        /*
-        for(let change of changes)
-        {
-            query+=`UPDATE subnet_${this.state.curSub} SET description="${change.description}",device="${change.device}",assigned="${change.ipState}";`;
-        }
-        console.log(query);
-        schemaDB.run(query);
-        //let data=schemaDB.export();
-      //  let DB_Buffer=new Buffer(data);
-        fs.writeFile(`${filename}`,schemaDB,(err)=>{
-                 if(err){
-                        dialog.showErrorBox("Save Error",`${err.toString()}`);
-                        return;
-                 }
-                 dialog.showMessageBox({type:"info",message:"The schema has been saved successfully!",buttons:['Ok']});
-                 this.setState({changes:[],changed:false});
-        })
-        */
-           dialog.showMessageBox({type:"info",message:"The schema has been saved successfully!",buttons:['Ok']});
-           this.setState({changes:[],changed:false});
-        
+        let pages=this.state.pages;
+        schemaDB.serialize(()=>{
+            try{
+                for(let change of changes)
+                {
+                    schemaDB.run(`UPDATE subnet_${this.state.curSub} SET description="${change.description}",device="${change.device}",assigned="${change.ipState}" where address="${change.address}";`);
+                    //update state
+                }
+                dialog.showMessageBox({type:"info",message:"The schema has been saved successfully!",buttons:['Ok']});
+                this.setSub(this.state.curPage);
+                this.setState({changes:[],changed:false});
+            }
+            catch(err){
+                dialog.showErrorBox("Save Error",`${err.toString()}`);
+                return;
+            }   
+        });
      },
-     setChange(device,description,key,ipState){
+     setChange(device,description,key,ipState,pageNum){
          //the change is from unassigned to assigned
          let pages=this.state.pages;
          let curPage=this.state.curPage;
@@ -101,52 +101,48 @@ let HostEntry=React.createClass({
           //set the change if its new
           if(isNew){
                 if(ipState){
-                    changes.push({page:curPage,subnet:key,device,description,ipState:'TRUE'})
-                    console.log("Assigned")
+                    changes.push({page:curPage,subnet:key,device,description,ipState:'TRUE',address:pages[curPage].subnets[key].address,pageNum})
                 }
                 else{
-                    changes.push({page:curPage,subnet:key,device:'--',description:'--',ipState:'FALSE'})
-                    console.log("un-Assigned")
+                    changes.push({page:curPage,subnet:key,device:'--',description:'--',ipState:'FALSE',address:pages[curPage].subnets[key].address,pageNum})
                 }
-                console.log()
           }
           else{
-            
                 if(ipState){
-                    changes[curChange]=({page:curPage,subnet:key,device,description,ipState:'TRUE'})
+                    changes[curChange]=({page:curPage,subnet:key,device,description,ipState:'TRUE',address:pages[curPage].subnets[key].address,pageNum})
                 }
                 else{
-                    changes[curChange]=({page:curPage,subnet:key,device:'--',description:'--',ipState:'FALSE'})
+                    changes[curChange]=({page:curPage,subnet:key,device:'--',description:'--',ipState:'FALSE',address:pages[curPage].subnets[key].address,pageNum})
                 }
                //this has returned to the original state
-              if(changes[curChange].ipState==pages[curPage].subnets[key].assigned){
-                  changes.splice(curChange,1);
-                  console.log("reset");
-              }
+                if((changes[curChange].ipState==pages[curPage].subnets[key].assigned) && (pages[curPage].subnets[key].description==description)
+                && (pages[curPage].subnets[key].device==device)){
+                    changes.splice(curChange,1); 
+                    console.log("reset");
+                }
           }    
-         this.setState({changes,pages,changed:(changes.length!=0)?true:false});
+         this.setState({changes,changed:(changes.length!=0)?true:false});
      },
      loadSchema:function (){
-          const sql=window.require("sql.js");
           dialog.showOpenDialog({defaultPath:path.resolve("./schemas/"),filters:[{name:"Schemas",extensions:['db','DB']}]},(filename)=>{
               if(!filename){
                   dialog.showErrorBox("File Error",err.toString());
                   return ;
               }
-              let DB_Buffer=fs.readFileSync(filename.toString());
-
               //load db
               try{
-                let schemaDB=new sql.Database(DB_Buffer);
+                let schemaDB=new sqlite3.Database(`${filename}`);
                 //prep data for presentation
-                let query="SELECT * FROM net_info";
-                let [origNet,initBits,subs,hosts]=schemaDB.exec(query)[0].values[0];
-
-               
-                let prefix=parseInt(initBits)+subnetBits(subs);
-                this.setState({schemaDB,prefix,subs,hosts,subMask:translatePrefix(prefix),schemaFile:filename});
-                this.setSub(0);
-              }
+                schemaDB.serialize(()=>{
+                    schemaDB.all("SELECT * FROM net_info",(err,ipInfo)=>{
+                    if(!ipInfo)  dialog.showErrorBox("Error loading db",err.toString());
+                    let {parent_net:origNet,init_prefix:initBits,subnet_count:subs,sub_host:hosts}=ipInfo[0];
+                    let prefix=parseInt(initBits)+subnetBits(subs);
+                    this.setState({schemaDB,prefix,subs,hosts,subMask:translatePrefix(prefix),schemaFile:filename});
+                    this.setSub(0)
+                    })
+                })   
+              }             
               catch(err){
                   dialog.showErrorBox("Error loading db",err.toString());
               }
@@ -174,36 +170,36 @@ let HostEntry=React.createClass({
      setSub(subNum){
         let schemaDB=this.state.schemaDB;
         let prefix=this.state.prefix;
-        let query=`SELECT * FROM subnet_${subNum}`;
-        let subnets_raw=schemaDB.exec(query);      
-        let [curIP]=subnets_raw[0].values[0];
+        schemaDB.serialize(()=>{
+            schemaDB.all(`SELECT * FROM subnet_${subNum}`,(err,ipInfo)=>{   
+                if(!ipInfo) return  dialog.showErrorBox("Seek Error","Cant move up query=="+`SELECT * FROM subnet_${subNum}`);
+                let curIP=ipInfo[0].address;
+                //pack[]
+                let pages=[],count=0,sub=0,nextPager=10;
+                for(let page=0;page<Math.ceil(ipInfo.length/10);page++)
+                {
+                    let netPage=[];
+                    while(sub<(nextPager))
+                    {
+                        if(ipInfo[sub]){
+                            let {address,assigned,device,description}=ipInfo[sub];
+                            netPage.push({num:count+1,address,assigned,device,description});
+                            sub++;
+                            count++;
+                        }
+                        else{
+                            break;
+                        } 
+                        
+                    }
+                    if(netPage.length==0) break;
+                    nextPager+=10;
+                    pages.push({num:page,subnets:netPage.slice(0)});
 
-        //pack
-        let pages=[],count=0,sub=0,nextPager=10;
-        console.log("Pages",Math.ceil(subnets_raw[0].values.length/10));
-        for(let page=0;page<Math.ceil(subnets_raw[0].values.length/10);page++)
-        {
-            let netPage=[];
-            while(sub<(nextPager))
-            {
-                if(subnets_raw[0].values[sub]){
-                    let [address,assigned,device,description]=subnets_raw[0].values[sub];
-                    netPage.push({num:count+1,address,assigned,device,description});
-                    sub++;
-                    count++;
                 }
-                else{
-                    break;
-                } 
-                
-            }
-            if(netPage.length==0) break;
-            nextPager+=10;
-            pages.push({num:page,subnets:netPage.slice(0)});
-
-        }
-        this.setState({init:false,curIP:currentNetwork(curIP,'/'+prefix.toString()),pages,curPage:0,curSub:subNum})
-
+                this.setState({schemaDB,init:false,curIP:currentNetwork(curIP,'/'+prefix.toString()),pages,curPage:0,curSub:subNum})
+            });
+        });
      },
      pageDown:function(){
          let curPage=this.state.curPage;
@@ -259,7 +255,7 @@ let HostEntry=React.createClass({
                             <p className="col-sm-3">Network {this.state.curSub+1} of {this.state.subs} </p>
                             <div className="col-sm-2">
                                 <button className="btn btn-sm btn-default fa fa-chevron-left" onClick={this.netDown} 
-                                disabled={(!(this.state.curSub-1)<0) ? true :false}/>
+                                disabled={(this.state.curSub==0) ? true :false}/>
                                 &nbsp;
                                 <button className="btn btn-sm btn-default fa fa-chevron-right" onClick={this.netUp}
                                 disabled={((this.state.curSub+1)>=this.state.subs) ? true :false}/>
@@ -286,11 +282,9 @@ let HostEntry=React.createClass({
                                      
                                      this.state.pages[this.state.curPage].subnets.map((subnet,index)=>{
                                          return(
-                                              <HostEntry subnet={subnet} subKey={index} refBack={this.setChange} key={index} />
+                                              <HostEntry subnet={subnet} page={this.state.curPage} refBack={this.setChange} key={index} />
                                          )
                                      })
-                                     
-
                                  }
                             </tbody> 
                             </table>  
