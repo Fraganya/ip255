@@ -23265,6 +23265,10 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
+	var _reactDom = __webpack_require__(34);
+
+	var _reactDom2 = _interopRequireDefault(_reactDom);
+
 	var _ip = __webpack_require__(173);
 
 	var _ipv = __webpack_require__(175);
@@ -23280,25 +23284,154 @@
 	var path = window.require("path");
 	var sqlite3 = window.require('sqlite3').verbose();
 
+	var EditForm = _react2.default.createClass({
+	    displayName: "EditForm",
+	    update: function update() {
+	        var descVal = this.refs.description.value;
+	        var devName = this.refs.device.value;
+	        var ipState = this.refs.assigned.value;
+	        this.props.refBack(descVal, devName, ipState);
+	        this.unMount();
+	    },
+	    unMount: function unMount() {
+	        $("#edit-diag").modal('hide');
+	        _reactDom2.default.unmountComponentAtNode(document.getElementById("edit-form"));
+	    },
+	    render: function render() {
+	        var _this = this;
+
+	        var getOps = function getOps() {
+	            if (_this.props.ipState == "TRUE") {
+	                return _react2.default.createElement(
+	                    "select",
+	                    { className: "form-control", ref: "assigned" },
+	                    _react2.default.createElement(
+	                        "option",
+	                        { value: "TRUE" },
+	                        "Yes"
+	                    ),
+	                    _react2.default.createElement(
+	                        "option",
+	                        { value: "FALSE" },
+	                        "No"
+	                    )
+	                );
+	            } else {
+	                return _react2.default.createElement(
+	                    "select",
+	                    { className: "form-control", ref: "assigned" },
+	                    _react2.default.createElement(
+	                        "option",
+	                        { value: "FALSE" },
+	                        "No"
+	                    ),
+	                    _react2.default.createElement(
+	                        "option",
+	                        { value: "TRUE" },
+	                        "Yes"
+	                    )
+	                );
+	            }
+	        };
+	        return _react2.default.createElement(
+	            "div",
+	            { className: "modal fade", id: "edit-diag" },
+	            _react2.default.createElement(
+	                "div",
+	                { className: "modal-dialog modal-sm" },
+	                _react2.default.createElement(
+	                    "div",
+	                    { className: "modal-content" },
+	                    _react2.default.createElement(
+	                        "div",
+	                        { className: "modal-header" },
+	                        _react2.default.createElement(
+	                            "h4",
+	                            { className: "modal-title" },
+	                            "IP Allocation -",
+	                            this.props.address
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        "div",
+	                        { className: "modal-body" },
+	                        _react2.default.createElement(
+	                            "form",
+	                            { role: "form" },
+	                            _react2.default.createElement(
+	                                "div",
+	                                { className: "form-group" },
+	                                _react2.default.createElement(
+	                                    "label",
+	                                    null,
+	                                    "Assigned"
+	                                ),
+	                                getOps()
+	                            ),
+	                            _react2.default.createElement(
+	                                "div",
+	                                { className: "form-group" },
+	                                _react2.default.createElement(
+	                                    "label",
+	                                    null,
+	                                    "Device"
+	                                ),
+	                                _react2.default.createElement("input", { type: "text", className: "form-control", ref: "device", defaultValue: this.props.device })
+	                            ),
+	                            _react2.default.createElement(
+	                                "div",
+	                                { className: "form-group" },
+	                                _react2.default.createElement(
+	                                    "label",
+	                                    null,
+	                                    "Extra"
+	                                ),
+	                                _react2.default.createElement("input", { type: "text", className: "form-control", ref: "description", defaultValue: this.props.description })
+	                            )
+	                        )
+	                    ),
+	                    _react2.default.createElement(
+	                        "div",
+	                        { className: "modal-footer" },
+	                        _react2.default.createElement(
+	                            "button",
+	                            { type: "button", className: "btn btn-default", onClick: this.update },
+	                            "Update"
+	                        ),
+	                        _react2.default.createElement(
+	                            "button",
+	                            { type: "button", className: "btn btn-primary", onClick: this.unMount },
+	                            "Cancel"
+	                        )
+	                    )
+	                )
+	            )
+	        );
+	    }
+	});
 	var HostEntry = _react2.default.createClass({
 	    displayName: "HostEntry",
 
 	    getInitialState: function getInitialState() {
-	        return { assigned: true };
+	        return { assigned: this.props.subnet.assigned == "TRUE" ? true : false };
 	    },
-	    assign: function assign() {
-	        var devName = this.refs.devName.value;
-	        var description = this.refs.description.value;
-	        this.refs.description.value = description.trim().length != 0 ? description : '--';
-	        this.refs.devName.value = devName.trim().length != 0 ? devName : '--';
-	        // this.props.refBack(devName,description,this.props.key,!this.state.assigned,this.props.page);
-	        console.log(this.props.subnet);
+	    assign: function assign(description, device, assigned) {
+	        assigned = assigned == "TRUE" ? true : false;
+	        description = description.trim().length != 0 ? description : '--';
+	        device = device.trim().length != 0 ? device : '--';
+	        this.props.refBack(device, description, this.props.subKey, assigned, this.props.page);
 	        this.setState({ assigned: !this.state.assigned });
 	    },
+	    change: function change() {
+	        var subnet = this.props.subnet;
+	        _reactDom2.default.render(_react2.default.createElement(EditForm, { refBack: this.assign, address: subnet.address, device: subnet.device, description: subnet.description, ipState: subnet.assigned }), document.getElementById("edit-form"));
+	        $("#edit-diag").modal('show');
+	    },
+
 	    render: function render() {
 	        return _react2.default.createElement(
 	            "tr",
-	            null,
+	            { style: { cursor: "pointer" }, onClick: this.change },
 	            _react2.default.createElement(
 	                "td",
 	                { ref: "hostNum" },
@@ -23312,19 +23445,17 @@
 	            _react2.default.createElement(
 	                "td",
 	                { ref: "assigned", className: "text-center" },
-	                _react2.default.createElement("input", { type: "checkbox", checked: this.state.assigned ? true : false, onChange: this.assign })
+	                this.props.subnet.assigned == "TRUE" ? "YES" : "NO"
 	            ),
 	            _react2.default.createElement(
 	                "td",
-	                { ref: "device", style: { padding: 0 + 'px' } },
-	                _react2.default.createElement("input", { type: "text", ref: "devName", placeholder: "enter device name", className: "form-control", style: { borderRadius: 0 + 'px', border: 'none', marginBottom: 0 + 'px' },
-	                    defaultValue: this.props.subnet.device, disabled: this.state.assigned ? true : false })
+	                { ref: "device" },
+	                this.props.subnet.device
 	            ),
 	            _react2.default.createElement(
 	                "td",
 	                { ref: "extra", style: { padding: 0 + 'px' } },
-	                _react2.default.createElement("input", { type: "text", ref: "description", placeholder: "enter description", className: "form-control", style: { borderRadius: 0 + 'px', border: 'none', marginBottom: 0 + 'px' },
-	                    defaultValue: this.props.subnet.description, disabled: this.state.assigned ? true : false })
+	                this.props.subnet.description
 	            )
 	        );
 	    }
@@ -23335,6 +23466,24 @@
 	    getInitialState: function getInitialState() {
 	        return { init: true, changes: [], changed: false };
 	    },
+	    deleteSchema: function deleteSchema() {
+	        var _this2 = this;
+
+	        var proceed = dialog.showMessageBox({ title: "Proceed", type: "warning", buttons: ["yes", "Cancel"], message: "Are you sure you want to delete this schema?.All data will be lost." });
+	        if (proceed == 0) {
+	            try {
+	                this.state.schemaDB.close();
+	                var filepath = this.state.schemaFile.toString();
+	                fs.unlink(filepath, function () {
+	                    _this2.setState({ init: true, curIP: '', pages: '', curPage: '', curSub: '', schemaDB: '', prefix: '', subMask: '', subs: '', hosts: '', changed: false });
+	                    dialog.showMessageBox({ type: "info", message: "The schema has been deleted!", buttons: ['Ok'] });
+	                });
+	            } catch (e) {
+	                dialog.showErrorBox("Delete Error", "" + e.toString());
+	            }
+	        }
+	    },
+
 	    reset: function reset() {
 	        var changed = this.state.changed;
 	        if (changed) {
@@ -23347,7 +23496,7 @@
 	        this.setState({ init: true, curIP: '', pages: '', curPage: '', curSub: '', schemaDB: '', prefix: '', subMask: '', subs: '', hosts: '', changed: false });
 	    },
 	    saveSchema: function saveSchema() {
-	        var _this = this;
+	        var _this3 = this;
 
 	        var filename = this.state.schemaFile;
 	        var schemaDB = this.state.schemaDB;
@@ -23363,7 +23512,7 @@
 	                    for (var _iterator = changes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 	                        var change = _step.value;
 
-	                        schemaDB.run("UPDATE subnet_" + _this.state.curSub + " SET description=\"" + change.description + "\",device=\"" + change.device + "\",assigned=\"" + change.ipState + "\" where address=\"" + change.address + "\";");
+	                        schemaDB.run("UPDATE subnet_" + _this3.state.curSub + " SET description=\"" + change.description + "\",device=\"" + change.device + "\",assigned=\"" + change.ipState + "\" where address=\"" + change.address + "\";");
 	                        //update state
 	                    }
 	                } catch (err) {
@@ -23382,8 +23531,8 @@
 	                }
 
 	                dialog.showMessageBox({ type: "info", message: "The schema has been saved successfully!", buttons: ['Ok'] });
-	                _this.setSub(_this.state.curPage);
-	                _this.setState({ changes: [], changed: false });
+	                _this3.setSub(_this3.state.curSub, _this3.state.curPage);
+	                _this3.setState({ changes: [], changed: false });
 	            } catch (err) {
 	                dialog.showErrorBox("Save Error", "" + err.toString());
 	                return;
@@ -23450,7 +23599,7 @@
 	    },
 
 	    loadSchema: function loadSchema() {
-	        var _this2 = this;
+	        var _this4 = this;
 
 	        dialog.showOpenDialog({ defaultPath: path.resolve("./schemas/"), filters: [{ name: "Schemas", extensions: ['db', 'DB'] }] }, function (filename) {
 	            if (!filename) {
@@ -23472,8 +23621,8 @@
 	                                hosts = _ipInfo$.sub_host;
 
 	                            var prefix = parseInt(initBits) + (0, _ip.subnetBits)(subs);
-	                            _this2.setState({ schemaDB: schemaDB, prefix: prefix, subs: subs, hosts: hosts, subMask: (0, _ipv.translatePrefix)(prefix), schemaFile: filename });
-	                            _this2.setSub(0);
+	                            _this4.setState({ schemaDB: schemaDB, prefix: prefix, subs: subs, hosts: hosts, subMask: (0, _ipv.translatePrefix)(prefix), schemaFile: filename });
+	                            _this4.setSub(0);
 	                        });
 	                    });
 	                })();
@@ -23498,8 +23647,8 @@
 	        }
 	        this.setSub(curSub + 1);
 	    },
-	    setSub: function setSub(subNum) {
-	        var _this3 = this;
+	    setSub: function setSub(subNum, page) {
+	        var _this5 = this;
 
 	        var schemaDB = this.state.schemaDB;
 	        var prefix = this.state.prefix;
@@ -23512,7 +23661,7 @@
 	                    count = 0,
 	                    sub = 0,
 	                    nextPager = 10;
-	                for (var page = 0; page < Math.ceil(ipInfo.length / 10); page++) {
+	                for (var _page = 0; _page < Math.ceil(ipInfo.length / 10); _page++) {
 	                    var netPage = [];
 	                    while (sub < nextPager) {
 	                        if (ipInfo[sub]) {
@@ -23531,11 +23680,15 @@
 	                    }
 	                    if (netPage.length == 0) break;
 	                    nextPager += 10;
-	                    pages.push({ num: page, subnets: netPage.slice(0) });
+	                    pages.push({ num: _page, subnets: netPage.slice(0) });
 	                }
-	                _this3.setState({ schemaDB: schemaDB, init: false, curIP: (0, _ip.currentNetwork)(curIP, '/' + prefix.toString()), pages: pages, curPage: 0, curSub: subNum });
+	                var curPage = page ? page : 0;
+	                _this5.setState({ schemaDB: schemaDB, init: false, curIP: (0, _ip.currentNetwork)(curIP, '/' + prefix.toString()), pages: pages, curPage: curPage, curSub: subNum });
 	            });
 	        });
+	    },
+	    change: function change() {
+	        console.log("Clicked");
 	    },
 
 	    pageDown: function pageDown() {
@@ -23586,7 +23739,7 @@
 	        );
 	    },
 	    finalRender: function finalRender() {
-	        var _this4 = this;
+	        var _this6 = this;
 
 	        return _react2.default.createElement(
 	            "div",
@@ -23606,7 +23759,7 @@
 	                    "div",
 	                    { className: "btn-group col-sm-4" },
 	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-save", title: "Save Schema", onClick: this.saveSchema }),
-	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-trash", title: "Delete Schema" }),
+	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-trash", title: "Delete Schema", onClick: this.deleteSchema }),
 	                    _react2.default.createElement("button", { className: "btn btn-default fa fa-close", type: "button", title: "Close Schema", onClick: this.reset })
 	                )
 	            ),
@@ -23643,7 +23796,7 @@
 	                        { className: "row" },
 	                        _react2.default.createElement(
 	                            "table",
-	                            { className: "table table-bordered" },
+	                            { className: "table table-bordered table-hover" },
 	                            _react2.default.createElement(
 	                                "caption",
 	                                null,
@@ -23651,7 +23804,7 @@
 	                                "/",
 	                                this.state.prefix,
 	                                " Hosts  ",
-	                                this.state.changed ? '*' : ''
+	                                this.state.changed ? '* changes' : ''
 	                            ),
 	                            _react2.default.createElement(
 	                                "thead",
@@ -23690,7 +23843,7 @@
 	                                "tbody",
 	                                null,
 	                                this.state.pages[this.state.curPage].subnets.map(function (subnet, index) {
-	                                    return _react2.default.createElement(HostEntry, { subnet: subnet, page: _this4.state.curPage, refBack: _this4.setChange, key: index });
+	                                    return _react2.default.createElement(HostEntry, { subnet: subnet, page: _this6.state.curPage, subKey: index, refBack: _this6.setChange, key: index });
 	                                })
 	                            )
 	                        ),

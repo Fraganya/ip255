@@ -1,4 +1,5 @@
  import React from "react";
+ import ReactDOM from "react-dom"
 
  import {currentNetwork} from "../lib/ip.js";
  import {subnetBits} from "../lib/ip.js";
@@ -11,35 +12,100 @@ const fs=window.require("fs");
 const path=window.require("path");
 const sqlite3=window.require('sqlite3').verbose();
 
+let EditForm=React.createClass({
+    update(){
+        let descVal=this.refs.description.value;
+        let devName=this.refs.device.value;
+        let ipState=this.refs.assigned.value;
+        this.props.refBack(descVal,devName,ipState);
+        this.unMount();
+    },
+    unMount(){
+      $("#edit-diag").modal('hide');
+     ReactDOM.unmountComponentAtNode(document.getElementById("edit-form"));   
+    },
+    render(){
+        let getOps=()=>{
+            if(this.props.ipState=="TRUE"){
+                return(
+                    <select className="form-control" ref="assigned">
+                    <option value="TRUE">Yes</option>
+                    <option value="FALSE">No</option>
+                    </select>
+                )
+            }
+            else{
+               return(
+                    <select className="form-control" ref="assigned">
+                    <option value="FALSE">No</option>
+                    <option value="TRUE">Yes</option>
+                    </select>
+                )
+            }
+        }
+        return(
+             <div className="modal fade" id="edit-diag">
+            <div className="modal-dialog modal-sm">
+                <div className="modal-content">
+                    <div className="modal-header">
+                        <h4 className="modal-title">IP Allocation -{this.props.address}</h4>
+                    </div>
+                    <div className="modal-body">
+                                <form role="form">
+                                    <div className="form-group">
+                                        <label >Assigned</label>
+                                        {getOps()}
+                                    </div> 
+                                    <div className="form-group">
+                                        <label>Device</label>
+                                        <input type="text" className="form-control" ref="device" defaultValue={this.props.device}/>
+                                    </div>
+                                    <div className="form-group">
+                                        <label >Extra</label>
+                                        <input type="text" className="form-control" ref="description" defaultValue={this.props.description}/>
+                                    </div> 
+                                </form>
+                    </div>
+                    <div className="modal-footer">
+                        <button type="button" className="btn btn-default" onClick={this.update}>Update</button>
+                        <button type="button" className="btn btn-primary" onClick={this.unMount}>Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        )
+    }
+});
 let HostEntry=React.createClass({
     getInitialState:function(){
-        return {assigned:true};
+        return {assigned:(this.props.subnet.assigned=="TRUE") ? true : false};
     },
-    assign:function(){
-        let devName=this.refs.devName.value;
-        let description=this.refs.description.value;
-        this.refs.description.value=(description.trim().length!=0) ? description : '--';
-        this.refs.devName.value=(devName.trim().length!=0) ? devName : '--';
-       // this.props.refBack(devName,description,this.props.key,!this.state.assigned,this.props.page);
-        console.log(this.props.subnet);
+    assign:function(description,device,assigned){
+        assigned=(assigned=="TRUE") ? true :false;
+        description=(description.trim().length!=0) ? description : '--';
+        device=(device.trim().length!=0) ? device : '--';
+        this.props.refBack(device,description,this.props.subKey,assigned,this.props.page);
         this.setState({assigned:!this.state.assigned});
        
     },
+    change(){
+        let subnet=this.props.subnet;
+        ReactDOM.render(<EditForm refBack={this.assign} address={subnet.address} device={subnet.device} description={subnet.description} ipState={subnet.assigned}/>,document.getElementById("edit-form"));
+        $("#edit-diag").modal('show');
+    },
     render:function(){
         return(
-            <tr>
+            <tr style={{cursor:"pointer"}} onClick={this.change}>
                 <td ref="hostNum">{this.props.subnet.num}</td>
                 <td ref="Address">{this.props.subnet.address}</td>
                 <td ref="assigned" className="text-center">
-                    <input type='checkbox' checked={(this.state.assigned) ? true : false} onChange={this.assign} />
+                   { (this.props.subnet.assigned=="TRUE") ? "YES" : "NO"}
                 </td>
-                <td ref="device" style={{padding:0+'px'}}>
-                    <input type='text' ref="devName" placeholder="enter device name" className="form-control" style={{borderRadius:0+'px',border:'none',marginBottom:0+'px'}}
-                     defaultValue={this.props.subnet.device} disabled={(this.state.assigned) ? true : false}/>
+                <td ref="device">
+                   {this.props.subnet.device}
                 </td>
                 <td ref="extra" style={{padding:0+'px'}} >
-                     <input type='text' ref="description" placeholder="enter description" className="form-control" style={{borderRadius:0+'px',border:'none',marginBottom:0+'px'}}  
-                      defaultValue={this.props.subnet.description}  disabled={(this.state.assigned) ? true : false}/>
+                   {this.props.subnet.description}
                 </td>
             </tr>
         )
@@ -48,6 +114,22 @@ let HostEntry=React.createClass({
  let SchemaTab=React.createClass({
      getInitialState:function(){
          return {init:true,changes:[],changed:false};
+     },
+     deleteSchema(){
+        let proceed=dialog.showMessageBox({title:"Proceed",type:"warning",buttons:["yes","Cancel"],message:"Are you sure you want to delete this schema?.All data will be lost.",});
+        if(proceed==0){
+            try{
+                 this.state.schemaDB.close();
+                 let filepath=this.state.schemaFile.toString();
+                 fs.unlink(filepath,()=>{
+                      this.setState({init:true,curIP:'',pages:'',curPage:'',curSub:'',schemaDB:'',prefix:'',subMask:'',subs:'',hosts:'',changed:false});
+                      dialog.showMessageBox({type:"info",message:"The schema has been deleted!",buttons:['Ok']});
+                 })
+            }
+            catch(e){
+                 dialog.showErrorBox("Delete Error",`${e.toString()}`);
+            } 
+        }
      },
      reset:function(){
          let changed=this.state.changed;
@@ -73,7 +155,7 @@ let HostEntry=React.createClass({
                     //update state
                 }
                 dialog.showMessageBox({type:"info",message:"The schema has been saved successfully!",buttons:['Ok']});
-                this.setSub(this.state.curPage);
+                this.setSub(this.state.curSub,this.state.curPage);
                 this.setState({changes:[],changed:false});
             }
             catch(err){
@@ -167,7 +249,7 @@ let HostEntry=React.createClass({
          }
         this.setSub(curSub+1);
      },
-     setSub(subNum){
+     setSub(subNum,page){
         let schemaDB=this.state.schemaDB;
         let prefix=this.state.prefix;
         schemaDB.serialize(()=>{
@@ -197,9 +279,13 @@ let HostEntry=React.createClass({
                     pages.push({num:page,subnets:netPage.slice(0)});
 
                 }
-                this.setState({schemaDB,init:false,curIP:currentNetwork(curIP,'/'+prefix.toString()),pages,curPage:0,curSub:subNum})
+                let curPage=(page) ? page :0;
+                this.setState({schemaDB,init:false,curIP:currentNetwork(curIP,'/'+prefix.toString()),pages,curPage,curSub:subNum})
             });
         });
+     },
+     change(){
+         console.log("Clicked");
      },
      pageDown:function(){
          let curPage=this.state.curPage;
@@ -247,7 +333,7 @@ let HostEntry=React.createClass({
                     <p className="well well-sm col-sm-6">{this.state.curIP}/{this.state.prefix} Network Schema</p>
                     <div className="btn-group col-sm-4" >
                         <button className="btn btn-default fa fa-save" title="Save Schema" onClick={this.saveSchema}/>
-                        <button className="btn btn-default fa fa-trash" title="Delete Schema"/>
+                        <button className="btn btn-default fa fa-trash" title="Delete Schema" onClick={this.deleteSchema}/>
                          <button className="btn btn-default fa fa-close" type="button" title="Close Schema" onClick={this.reset}/>
                     </div>
                 </div>
@@ -266,8 +352,8 @@ let HostEntry=React.createClass({
                         <div className="col-sm-9">
                            
                             <div className="row">
-                                <table className="table table-bordered"> 
-                            <caption>{this.state.curIP}/{this.state.prefix} Hosts  {(this.state.changed) ? '*' :''}</caption> 
+                                <table className="table table-bordered table-hover"> 
+                            <caption>{this.state.curIP}/{this.state.prefix} Hosts  {(this.state.changed) ? '* changes' :''}</caption> 
                                 <thead> 
                                 <tr>      
                                     <th><b className="fa fa-hashtag"/></th>    
@@ -282,7 +368,7 @@ let HostEntry=React.createClass({
                                      
                                      this.state.pages[this.state.curPage].subnets.map((subnet,index)=>{
                                          return(
-                                              <HostEntry subnet={subnet} page={this.state.curPage} refBack={this.setChange} key={index} />
+                                              <HostEntry subnet={subnet} page={this.state.curPage} subKey={index} refBack={this.setChange} key={index}/>
                                          )
                                      })
                                  }
