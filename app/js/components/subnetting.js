@@ -303,7 +303,7 @@ let SubnetField=React.createClass({
                     <input className="form-control"  ref="hostReqs"/>
                     <label htmlFor="subnet-requirenments">Subnet Requirenments</label>
                     <input className="form-control" ref="subReqs"/>
-                    <div className="checkbox"> <label><input type="checkbox" onChange={this.useVLSM} checked={this.state.useVLSM}/>use VLSM</label></div> 
+                    <div className="checkbox"> <label><input type="checkbox" disabled={true} onChange={this.useVLSM} checked={this.state.useVLSM}/>use VLSM</label></div> 
                     </div>
                 )
             }
@@ -319,7 +319,7 @@ let SubnetField=React.createClass({
                         )}.bind(this))
                     }
                 <div className="row">
-                    <div className="checkbox col-sm-6"> <label><input type="checkbox" onChange={this.useVLSM} checked={this.state.useVLSM} />use VLSM</label></div> 
+                    <div className="checkbox col-sm-6"> <label><input type="checkbox" onChange={this.useVLSM} checked={this.state.useVLSM} disabled={true}/>use VLSM</label></div> 
                     <div style={{marginTop:4+'px'}} className="col-sm-6">
                     <button className="btn btn-default pull-right" type="button" onClick={this.addSubnet}>
                         <span className="glyphicon glyphicon-plus-sign"/> Subnet
@@ -360,7 +360,7 @@ let SubnetField=React.createClass({
             </div>
             <form className="form col-sm-4">
                 <label className="">Type</label>
-                <select className="form-control" ref="ipType">   
+                <select className="form-control" ref="ipType" defaultValue="4" disabled>   
                 <option value="4">IPv4</option>
                 <option value="6">IPv6</option>
                 </select> 

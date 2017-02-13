@@ -132,7 +132,7 @@
              <div className="row">
                <form className="form col-sm-4">
                  <label className="">Type</label>
-                 <select className="form-control" ref="ipType">   
+                 <select className="form-control" ref="ipType" defaultValue="4" disabled={true}>   
                     <option value="4">IPv4</option>
                     <option value="6">IPv6</option>
                  </select> 

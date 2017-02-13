@@ -58,15 +58,15 @@
 
 	var _subnetting2 = _interopRequireDefault(_subnetting);
 
-	var _aggregation = __webpack_require__(176);
+	var _aggregation = __webpack_require__(196);
 
 	var _aggregation2 = _interopRequireDefault(_aggregation);
 
-	var _schema = __webpack_require__(177);
+	var _schema = __webpack_require__(197);
 
 	var _schema2 = _interopRequireDefault(_schema);
 
-	var _misc = __webpack_require__(178);
+	var _misc = __webpack_require__(198);
 
 	var _misc2 = _interopRequireDefault(_misc);
 
@@ -21934,7 +21934,7 @@
 	                        _react2.default.createElement(
 	                            "label",
 	                            null,
-	                            _react2.default.createElement("input", { type: "checkbox", onChange: _this2.useVLSM, checked: _this2.state.useVLSM }),
+	                            _react2.default.createElement("input", { type: "checkbox", disabled: true, onChange: _this2.useVLSM, checked: _this2.state.useVLSM }),
 	                            "use VLSM"
 	                        )
 	                    )
@@ -21959,7 +21959,7 @@
 	                            _react2.default.createElement(
 	                                "label",
 	                                null,
-	                                _react2.default.createElement("input", { type: "checkbox", onChange: _this2.useVLSM, checked: _this2.state.useVLSM }),
+	                                _react2.default.createElement("input", { type: "checkbox", onChange: _this2.useVLSM, checked: _this2.state.useVLSM, disabled: true }),
 	                                "use VLSM"
 	                            )
 	                        ),
@@ -22040,7 +22040,7 @@
 	                ),
 	                _react2.default.createElement(
 	                    "select",
-	                    { className: "form-control", ref: "ipType" },
+	                    { className: "form-control", ref: "ipType", defaultValue: "4", disabled: true },
 	                    _react2.default.createElement(
 	                        "option",
 	                        { value: "4" },
@@ -22827,7 +22827,27 @@
 	}
 
 /***/ },
-/* 176 */
+/* 176 */,
+/* 177 */,
+/* 178 */,
+/* 179 */,
+/* 180 */,
+/* 181 */,
+/* 182 */,
+/* 183 */,
+/* 184 */,
+/* 185 */,
+/* 186 */,
+/* 187 */,
+/* 188 */,
+/* 189 */,
+/* 190 */,
+/* 191 */,
+/* 192 */,
+/* 193 */,
+/* 194 */,
+/* 195 */,
+/* 196 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -23024,7 +23044,7 @@
 	                ),
 	                _react2.default.createElement(
 	                    'select',
-	                    { className: 'form-control', ref: 'ipType' },
+	                    { className: 'form-control', ref: 'ipType', defaultValue: '4', disabled: true },
 	                    _react2.default.createElement(
 	                        'option',
 	                        { value: '4' },
@@ -23252,7 +23272,7 @@
 	exports.default = AggregationTab;
 
 /***/ },
-/* 177 */
+/* 197 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -24011,7 +24031,7 @@
 	exports.default = SchemaTab;
 
 /***/ },
-/* 178 */
+/* 198 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24024,35 +24044,35 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _findNet = __webpack_require__(179);
+	var _findNet = __webpack_require__(199);
 
 	var _findNet2 = _interopRequireDefault(_findNet);
 
-	var _findClass = __webpack_require__(180);
+	var _findClass = __webpack_require__(200);
 
 	var _findClass2 = _interopRequireDefault(_findClass);
 
-	var _specialAddresses = __webpack_require__(181);
+	var _specialAddresses = __webpack_require__(201);
 
 	var _specialAddresses2 = _interopRequireDefault(_specialAddresses);
 
-	var _protocols = __webpack_require__(182);
+	var _protocols = __webpack_require__(202);
 
 	var _protocols2 = _interopRequireDefault(_protocols);
 
-	var _classes = __webpack_require__(183);
+	var _classes = __webpack_require__(203);
 
 	var _classes2 = _interopRequireDefault(_classes);
 
-	var _ipVersions = __webpack_require__(184);
+	var _ipVersions = __webpack_require__(204);
 
 	var _ipVersions2 = _interopRequireDefault(_ipVersions);
 
-	var _guidelines = __webpack_require__(185);
+	var _guidelines = __webpack_require__(205);
 
 	var _guidelines2 = _interopRequireDefault(_guidelines);
 
-	var _convert = __webpack_require__(186);
+	var _convert = __webpack_require__(206);
 
 	var _convert2 = _interopRequireDefault(_convert);
 
@@ -24196,7 +24216,7 @@
 	exports.default = MiscTab;
 
 /***/ },
-/* 179 */
+/* 199 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24459,7 +24479,7 @@
 	exports.default = FindNetTab;
 
 /***/ },
-/* 180 */
+/* 200 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -24730,7 +24750,7 @@
 	exports.default = FindClassTab;
 
 /***/ },
-/* 181 */
+/* 201 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -25026,7 +25046,7 @@
 	exports.default = SpecialAddTab;
 
 /***/ },
-/* 182 */
+/* 202 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -25127,7 +25147,7 @@
 	exports.default = ProtocolsTab;
 
 /***/ },
-/* 183 */
+/* 203 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -25328,7 +25348,7 @@
 	exports.default = ClassesTab;
 
 /***/ },
-/* 184 */
+/* 204 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -25515,7 +25535,7 @@
 	exports.default = IPVersionsTab;
 
 /***/ },
-/* 185 */
+/* 205 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -25582,7 +25602,7 @@
 	exports.default = GuidelinesTab;
 
 /***/ },
-/* 186 */
+/* 206 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
